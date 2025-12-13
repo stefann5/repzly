@@ -128,6 +128,7 @@ Sistem koristi **API Gateway** kao centralnu tačku pristupa kroz koju prolazi s
 ### Istorija treninga (User)
 - Korisnik ima uvid u svoju istoriju workout-a
 - Podaci su grupisani po startovanim programima
+- Korisnik takođe ima i uvid istorije svake pojedinačne vežbe
 
 ### Analitike (User)
 - Korisniku se prikazuju analitike volumena (sets × reps × weight)

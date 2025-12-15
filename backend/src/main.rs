@@ -106,13 +106,13 @@ impl IntoResponse for AppError {
     }
 }
 
-const ACCESS_TOKEN_DURATION_HOURS: i64 = 1;
+const ACCESS_TOKEN_DURATION_HOURS: i64 = 10; // for testing
 const REFRESH_TOKEN_DURATION_DAYS: i64 = 7;
 
 fn generate_access_token(user: &User, secret: &str) -> Result<String, AppError> {
     let claims = MyClaims {
         sub: user.username.clone(),
-        exp: (chrono::Utc::now() + chrono::Duration::hours(ACCESS_TOKEN_DURATION_HOURS)).timestamp() as usize,
+        exp: (chrono::Utc::now() + chrono::Duration::seconds(ACCESS_TOKEN_DURATION_HOURS)).timestamp() as usize,
         aud: "my-app".to_string(),
         role: user.role.clone(),
     };
@@ -336,7 +336,7 @@ async fn main() {
 
     let mut validation = Validation::new(Algorithm::HS256);
     validation.set_audience(&["my-app"]);
-
+    validation.leeway = 0; // NEED TO REMOVE LATER
     let decoder = LocalDecoder::builder()
         .keys(vec![DecodingKey::from_secret(jwt_secret.as_bytes())])
         .validation(validation)

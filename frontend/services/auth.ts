@@ -1,50 +1,85 @@
-import api from "@/utils/api";
-import * as SecureStore from "expo-secure-store";
-import { Platform } from "react-native";
+import axios from "axios";
+import { storage, ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from "@/utils/storage";
 
-const isWeb = Platform.OS === "web";
-const TOKEN_KEY = "auth-token";
+const API_URL = "http://192.168.1.9:3000";
+
+// Separate axios instance for auth endpoints (no interceptors)
+const authApi = axios.create({
+  baseURL: API_URL,
+  headers: { "Content-Type": "application/json" },
+});
 
 interface LoginCredentials {
   username: string;
   password: string;
 }
 
-interface LoginResponse {
-  token: string;
+interface AuthResponse {
+  access_token: string;
+  refresh_token: string;
+  expires_in: number;
+}
+
+interface RegisterRequest {
+    username: string,
+    email: string,
+    password: string,
+    confirm_password: string,
 }
 
 export const authService = {
-  // Get stored token
-  getToken: async (): Promise<string | null> => {
-    return isWeb
-      ? localStorage.getItem(TOKEN_KEY)
-      : await SecureStore.getItemAsync(TOKEN_KEY);
-  },
+  getAccessToken: () => storage.get(ACCESS_TOKEN_KEY),
+  getRefreshToken: () => storage.get(REFRESH_TOKEN_KEY),
 
-  // Check if token exists
   isAuthenticated: async (): Promise<boolean> => {
-    const token = await authService.getToken();
+    const token = await storage.get(ACCESS_TOKEN_KEY);
     return !!token;
   },
 
-  // Login
+  setTokens: async (tokens: AuthResponse): Promise<void> => {
+    await storage.set(ACCESS_TOKEN_KEY, tokens.access_token);
+    await storage.set(REFRESH_TOKEN_KEY, tokens.refresh_token);
+  },
+
+  clearTokens: async (): Promise<void> => {
+    await storage.remove(ACCESS_TOKEN_KEY);
+    await storage.remove(REFRESH_TOKEN_KEY);
+  },
+
   login: async (credentials: LoginCredentials): Promise<void> => {
-    const response = await api.post<LoginResponse>("/login", credentials);
-    const { token } = response.data;
-    if (isWeb) {
-      localStorage.setItem(TOKEN_KEY, token);
-    } else {
-      await SecureStore.setItemAsync(TOKEN_KEY, token);
+    const response = await authApi.post<AuthResponse>("/login", credentials);
+    await authService.setTokens(response.data);
+  },
+
+  refresh: async (): Promise<boolean> => {
+    const refreshToken = await storage.get(REFRESH_TOKEN_KEY);
+    if (!refreshToken) return false;
+
+    try {
+      const response = await authApi.post<AuthResponse>("/refresh", {
+        refresh_token: refreshToken,
+      });
+      await authService.setTokens(response.data);
+      return true;
+    } catch {
+      await authService.clearTokens();
+      return false;
     }
   },
 
-  // Logout
+  register: async (data: RegisterRequest): Promise<void> => {
+    await authApi.post("/register", data);
+  },
+
   logout: async (): Promise<void> => {
-    if (isWeb) {
-      localStorage.removeItem(TOKEN_KEY);
-    } else {
-      await SecureStore.deleteItemAsync(TOKEN_KEY);
+    const refreshToken = await storage.get(REFRESH_TOKEN_KEY);
+    if (refreshToken) {
+      try {
+        await authApi.post("/logout", { refresh_token: refreshToken });
+      } catch {
+        // Ignore logout errors
+      }
     }
+    await authService.clearTokens();
   },
 };

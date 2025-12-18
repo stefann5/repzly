@@ -1,19 +1,19 @@
-import { KeyboardAvoidingView, Platform, TextInput, View } from "react-native";
-import { useForm, Controller } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/Button";
 import { Input } from "@/components/Input";
 import { Label } from "@/components/Label";
-import { Text } from "react-native"
-import { useAuthStore } from "@/utils/authStore";
 import { useAuth } from "@/hooks/useAuth";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "expo-router";
 import { useRef } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { KeyboardAvoidingView, Platform, TextInput, View } from "react-native";
+import { z } from "zod";
+import { SafeAreaView } from "@/components/SafeAreaView";
+import { KeyboardAwareScrollView } from '@/components/KeyboardAwareScrollView';
 
 const signInSchema = z.object({
   username: z.string().min(1, "Username is required"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
 type SignInForm = z.infer<typeof signInSchema>;
@@ -21,6 +21,7 @@ type SignInForm = z.infer<typeof signInSchema>;
 export default function SignInScreen() {
   const { login } = useAuth();
   const passwordRef = useRef<TextInput>(null);
+  const router = useRouter();
 
   const { control, handleSubmit, formState: { errors, isSubmitting } } = useForm<SignInForm>({
     resolver: zodResolver(signInSchema),
@@ -33,7 +34,12 @@ export default function SignInScreen() {
   };
 
   return (
-      <KeyboardAvoidingView className="flex-1 justify-center px-6 bg-white dark:bg-zinc-900" behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+    <SafeAreaView className="flex-1 bg-white dark:bg-zinc-900">
+      <KeyboardAwareScrollView
+        bottomOffset={62}
+        className="flex-1 px-6"
+        contentContainerClassName="justify-center flex-1"
+      >
         <Label variant="heading" weight="bold" styleClass="mb-8 font-atkinson">Sign In</Label>
         {/* <Text className="text-white font-atkinson">REPZLY 0</Text> */}
         <Controller
@@ -85,10 +91,18 @@ export default function SignInScreen() {
         />
 
         <Button
+          title="Sign Up"
+          theme="secondary"
+          styleClass="mt-3"
+          onPress={() => router.push('/register')}
+        />
+
+        <Button
           title="Forgot password?"
           theme="tertiary"
           styleClass="mt-3"
         />
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
+    </SafeAreaView>
   );
 }

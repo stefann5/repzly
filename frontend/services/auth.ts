@@ -1,10 +1,13 @@
-import api from "@/utils/api";
-import * as SecureStore from "expo-secure-store";
-import { Platform } from "react-native";
+import axios from "axios";
+import { storage, ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from "@/utils/storage";
 
-const isWeb = Platform.OS === "web";
-const ACCESS_TOKEN_KEY = "access-token";
-const REFRESH_TOKEN_KEY = "refresh-token";
+const API_URL = "http://192.168.1.9:3000";
+
+// Separate axios instance for auth endpoints (no interceptors)
+const authApi = axios.create({
+  baseURL: API_URL,
+  headers: { "Content-Type": "application/json" },
+});
 
 interface LoginCredentials {
   username: string;
@@ -17,18 +20,12 @@ interface AuthResponse {
   expires_in: number;
 }
 
-// Storage helpers
-const storage = {
-  get: async (key: string): Promise<string | null> => {
-    return isWeb ? localStorage.getItem(key) : await SecureStore.getItemAsync(key);
-  },
-  set: async (key: string, value: string): Promise<void> => {
-    isWeb ? localStorage.setItem(key, value) : await SecureStore.setItemAsync(key, value);
-  },
-  remove: async (key: string): Promise<void> => {
-    isWeb ? localStorage.removeItem(key) : await SecureStore.deleteItemAsync(key);
-  },
-};
+interface RegisterRequest {
+    username: string,
+    email: string,
+    password: string,
+    confirm_password: string,
+}
 
 export const authService = {
   getAccessToken: () => storage.get(ACCESS_TOKEN_KEY),
@@ -50,16 +47,16 @@ export const authService = {
   },
 
   login: async (credentials: LoginCredentials): Promise<void> => {
-    const response = await api.post<AuthResponse>("/login", credentials);
+    const response = await authApi.post<AuthResponse>("/login", credentials);
     await authService.setTokens(response.data);
   },
 
   refresh: async (): Promise<boolean> => {
     const refreshToken = await storage.get(REFRESH_TOKEN_KEY);
     if (!refreshToken) return false;
-    console.log("Refreshing token...");
+
     try {
-      const response = await api.post<AuthResponse>("/refresh", {
+      const response = await authApi.post<AuthResponse>("/refresh", {
         refresh_token: refreshToken,
       });
       await authService.setTokens(response.data);
@@ -70,11 +67,15 @@ export const authService = {
     }
   },
 
+  register: async (data: RegisterRequest): Promise<void> => {
+    await authApi.post("/register", data);
+  },
+
   logout: async (): Promise<void> => {
     const refreshToken = await storage.get(REFRESH_TOKEN_KEY);
     if (refreshToken) {
       try {
-        await api.post("/logout", { refresh_token: refreshToken });
+        await authApi.post("/logout", { refresh_token: refreshToken });
       } catch {
         // Ignore logout errors
       }

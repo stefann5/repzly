@@ -20,6 +20,11 @@ export function useAuth() {
     setIsLoggedIn(true);
   };
 
+  const register = async (username: string, email: string, password: string, confirm_password: string) => {
+    await authService.register({ username, email, password, confirm_password });
+    setIsLoggedIn(true);
+  }
+
   const logout = async () => {
     await authService.logout();
     setIsLoggedIn(false);
@@ -30,5 +35,6 @@ export function useAuth() {
     login,
     logout,
     checkAuthStatus,
+    register,
   };
 }

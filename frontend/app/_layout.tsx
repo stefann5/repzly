@@ -54,9 +54,12 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <React.Fragment>
           <StatusBar style="auto" />
-          <Stack>
+          <Stack screenOptions={{ headerShown: false }}>
             <Stack.Protected guard={isLoggedIn}>
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="create-program" options={{ headerShown: false }} />
+              <Stack.Screen name="program-editor" options={{ headerShown: false }} />
+              <Stack.Screen name="workout-editor" options={{ headerShown: false }} />
             </Stack.Protected>
             <Stack.Protected guard={!isLoggedIn}>
               <Stack.Screen name="sign-in" options={{ headerShown: false }} />

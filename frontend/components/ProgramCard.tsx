@@ -1,0 +1,54 @@
+import { View, Pressable } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { Label } from "@/components/Label";
+import { Program } from "@/types/program";
+
+export function ProgramCard({ program, onPress, onDelete }: {
+  program: Program;
+  onPress: () => void;
+  onDelete: () => void;
+}) {
+  const isDraft = !program.created_at;
+
+  return (
+    <Pressable
+      onPress={onPress}
+      className="p-4 mb-3 bg-white border border-gray-200 rounded-xl dark:bg-zinc-800 dark:border-zinc-700 active:opacity-70"
+    >
+      <View className="flex-row items-start justify-between">
+        <View className="flex-1">
+          <View className="flex-row items-center">
+            <Label variant="body" weight="semibold">
+              {program.name}
+            </Label>
+            {isDraft && (
+              <View className="px-2 py-0.5 ml-2 bg-yellow-100 rounded dark:bg-yellow-900">
+                <Label variant="caption" color="secondary">
+                  Draft
+                </Label>
+              </View>
+            )}
+          </View>
+          {program.description && (
+            <Label variant="caption" color="secondary" styleClass="mt-1">
+              {program.description}
+            </Label>
+          )}
+          <View className="flex-row items-center mt-2">
+            <Label variant="caption" color="secondary">
+              {program.total_weeks} weeks
+            </Label>
+            {program.tags.length > 0 && (
+              <Label variant="caption" color="secondary" styleClass="ml-2">
+                • {program.tags.slice(0, 2).join(", ")}
+              </Label>
+            )}
+          </View>
+        </View>
+        <Pressable onPress={onDelete} className="p-2">
+          <Ionicons name="trash-outline" size={20} color="#ef4444" />
+        </Pressable>
+      </View>
+    </Pressable>
+  );
+}

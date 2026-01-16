@@ -55,7 +55,6 @@ export function NotesModal({
               bottomOffset={0}
               className="flex-1"
               contentContainerClassName="justify-center flex-1 bg-white dark:bg-zinc-900"
-              keyboardShouldPersistTaps="handled"
             >
         {/* Header */}
         <View className="px-4 py-4 border-b border-gray-200 dark:border-zinc-700">
@@ -77,12 +76,15 @@ export function NotesModal({
             multiline
             textAlignVertical="top"
             className="flex-1 p-3 text-base text-gray-900 dark:text-white bg-gray-100 dark:bg-zinc-800 rounded-lg"
+            style={{ minHeight: 300 }}
             autoFocus
           />
         </View>
 
+        
+        </KeyboardAwareScrollView>
         {/* Footer */}
-        <View className="flex-row justify-between px-4 py-4 border-t border-gray-200 dark:border-zinc-700">
+        <View className="flex-row justify-between px-4 py-4 border-t border-gray-200 dark:border-zinc-700  bg-white dark:bg-zinc-900">
           <Button
             title="Cancel"
             theme="secondary"
@@ -96,7 +98,6 @@ export function NotesModal({
             styleClass="flex-1 ml-2"
           />
         </View>
-        </KeyboardAwareScrollView>
         
     </Modal>
   );

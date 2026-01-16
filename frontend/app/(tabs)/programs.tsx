@@ -11,7 +11,7 @@ import { Program } from "@/types/program";
 import { useProgramStore } from "@/utils/programStore";
 
 export default function ProgramsScreen() {
-  const { programs, fetchPrograms, loadProgram, removeProgram, isLoading } = useProgram();
+  const { programs, fetchPrograms, removeProgram } = useProgram();
   const { setCurrentProgram, setWorkouts, setCurrentWeek, setCurrentWorkoutNumber } = useProgramStore();
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
@@ -26,14 +26,13 @@ export default function ProgramsScreen() {
     setRefreshing(false);
   };
 
-  const handleProgramPress = async (program: Program) => {
-    try {
-      setCurrentWorkoutNumber(null);
-      await loadProgram(program.id);
-      router.push("/create-program");
-    } catch (err) {
-      console.error("Failed to load program:", err);
-    }
+  const handleProgramPress = (program: Program) => {
+    // Set program from list data immediately and navigate
+    setCurrentProgram(program);
+    setWorkouts([]);
+    setCurrentWeek(1);
+    setCurrentWorkoutNumber(null);
+    router.push("/create-program");
   };
 
   const handleDeleteProgram = async (programId: string) => {

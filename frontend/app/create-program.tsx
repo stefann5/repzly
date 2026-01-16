@@ -1,14 +1,18 @@
-import { View, ScrollView } from "react-native";
-import { useEffect } from "react";
+import { View, ScrollView, Pressable } from "react-native";
+import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
 import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import * as ImagePicker from "expo-image-picker";
+import { Image } from "expo-image";
+import { Ionicons } from "@expo/vector-icons";
 import { Button } from "@/components/Button";
 import { Input } from "@/components/Input";
 import { Label } from "@/components/Label";
 import { SafeAreaView } from "@/components/SafeAreaView";
 import { useProgram } from "@/hooks/useProgram";
+import { programService } from "@/services/program";
 
 const programSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -22,6 +26,8 @@ type ProgramForm = z.infer<typeof programSchema>;
 export default function CreateProgramScreen() {
   const { currentProgram, createProgram, updateProgram, clearCurrentProgram, isLoading, error } = useProgram();
   const router = useRouter();
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const isEditMode = !!currentProgram;
 
@@ -49,14 +55,37 @@ export default function CreateProgramScreen() {
         tags: currentProgram.tags.join(", "),
         total_weeks: currentProgram.total_weeks.toString(),
       });
+      // Set existing image if available
+      if (currentProgram.image_url) {
+        setSelectedImage(currentProgram.image_url);
+      }
     }
   }, [currentProgram, reset]);
+
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      setSelectedImage(result.assets[0].uri);
+    }
+  };
+
+  const removeImage = () => {
+    setSelectedImage(null);
+  };
 
   const onSubmit = async (data: ProgramForm) => {
     try {
       const tags = data.tags
         ? data.tags.split(",").map((t) => t.trim()).filter((t) => t)
         : [];
+
+      let programId: string;
 
       if (isEditMode) {
         await updateProgram(currentProgram.id, {
@@ -65,14 +94,28 @@ export default function CreateProgramScreen() {
           tags,
           total_weeks: parseInt(data.total_weeks, 10),
         });
+        programId = currentProgram.id;
       } else {
-        await createProgram({
+        const newProgram = await createProgram({
           name: data.name,
           description: data.description || undefined,
           tags,
           total_weeks: parseInt(data.total_weeks, 10),
           public: false,
         });
+        programId = newProgram.id;
+      }
+
+      // Upload image if a new one was selected (not an existing URL)
+      if (selectedImage && !selectedImage.startsWith("http")) {
+        setIsUploadingImage(true);
+        try {
+          await programService.uploadImage(programId, selectedImage);
+        } catch (imgErr) {
+          console.error("Failed to upload image:", imgErr);
+        } finally {
+          setIsUploadingImage(false);
+        }
       }
 
       reset();
@@ -102,6 +145,38 @@ export default function CreateProgramScreen() {
             <Label color="error">{error}</Label>
           </View>
         )}
+
+        {/* Image Picker */}
+        <View className="mb-4">
+          <Label variant="caption" color="secondary" styleClass="mb-2">
+            Program Image (optional)
+          </Label>
+          {selectedImage ? (
+            <View className="relative">
+              <Image
+                source={{ uri: selectedImage }}
+                style={{ width: "100%", height: 180, borderRadius: 12 }}
+                contentFit="cover"
+              />
+              <Pressable
+                onPress={removeImage}
+                className="absolute p-2 bg-black rounded-full top-2 right-2"
+              >
+                <Ionicons name="close" size={20} color="white" />
+              </Pressable>
+            </View>
+          ) : (
+            <Pressable
+              onPress={pickImage}
+              className="items-center justify-center h-32 border-2 border-gray-300 border-dashed rounded-xl dark:border-zinc-600"
+            >
+              <Ionicons name="image-outline" size={32} color="#9CA3AF" />
+              <Label variant="caption" color="tertiary" styleClass="mt-2">
+                Tap to add image
+              </Label>
+            </Pressable>
+          )}
+        </View>
 
         <Controller
           control={control}
@@ -169,9 +244,15 @@ export default function CreateProgramScreen() {
         />
 
         <Button
-          title={isLoading ? (isEditMode ? "Saving..." : "Creating...") : (isEditMode ? "Save Changes" : "Next")}
+          title={
+            isUploadingImage
+              ? "Uploading image..."
+              : isLoading
+              ? (isEditMode ? "Saving..." : "Creating...")
+              : (isEditMode ? "Save Changes" : "Next")
+          }
           onPress={handleSubmit(onSubmit)}
-          disabled={isLoading}
+          disabled={isLoading || isUploadingImage}
           styleClass="w-full"
         />
       </ScrollView>

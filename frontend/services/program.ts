@@ -61,4 +61,30 @@ export const programService = {
   deleteExercises: async (programId: string, data: DeleteExercisesRequest): Promise<void> => {
     await workoutApi.delete(`/programs/${programId}/workout-exercises`, { data });
   },
+
+  // Upload program image
+  uploadImage: async (programId: string, imageUri: string): Promise<Program> => {
+    const formData = new FormData();
+
+    // Get file extension from URI
+    const uriParts = imageUri.split(".");
+    const fileType = uriParts[uriParts.length - 1];
+
+    formData.append("image", {
+      uri: imageUri,
+      name: `program-image.${fileType}`,
+      type: `image/${fileType === "jpg" ? "jpeg" : fileType}`,
+    } as unknown as Blob);
+
+    const response = await workoutApi.post<Program>(
+      `/programs/${programId}/image`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+    return response.data;
+  },
 };

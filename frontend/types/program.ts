@@ -3,6 +3,7 @@ export interface Program {
   id: string;
   name: string;
   description?: string;
+  image_url?: string;
   tags: string[];
   total_weeks: number;
   last_workout_number: number;

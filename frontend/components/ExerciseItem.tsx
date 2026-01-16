@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { View, Pressable, useColorScheme } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
 import { Label } from "./Label";
 import { SetRow } from "./SetRow";
 import { Button } from "./Button";
+import { NotesModal } from "./NotesModal";
 import { WorkoutExercise, Set } from "@/types/program";
 import { cn } from "@/utils/utils";
 import { useExerciseStore } from "@/utils/exerciseStore";
@@ -44,6 +46,10 @@ export function ExerciseItem({
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const { getExerciseName } = useExerciseStore();
+  const [isNotesModalVisible, setIsNotesModalVisible] = useState(false);
+
+  const exerciseName = getExerciseName(exercise.exercise_id);
+  const hasNotes = exercise.notes && exercise.notes.trim().length > 0;
 
   return (
     <View
@@ -64,13 +70,23 @@ export function ExerciseItem({
             numberOfLines={1}
             styleClass="flex-1"
           >
-            {getExerciseName(exercise.exercise_id)}
+            {exerciseName}
           </Label>
           <Ionicons
             name="chevron-down"
             size={16}
             color={isDark ? "#9CA3AF" : "#6B7280"}
             style={{ marginLeft: 4 }}
+          />
+        </Pressable>
+        <Pressable
+          onPress={() => setIsNotesModalVisible(true)}
+          className="p-1 ml-2"
+        >
+          <Ionicons
+            name={hasNotes ? "document-text" : "document-text-outline"}
+            size={18}
+            color={hasNotes ? "#3b82f6" : (isDark ? "#9CA3AF" : "#6B7280")}
           />
         </Pressable>
         <Pressable
@@ -162,6 +178,15 @@ export function ExerciseItem({
             styleClass="mt-2"
           />
         </View>
+
+      {/* Notes Modal */}
+      <NotesModal
+        visible={isNotesModalVisible}
+        initialNotes={exercise.notes || ""}
+        exerciseName={exerciseName}
+        onClose={() => setIsNotesModalVisible(false)}
+        onSave={(notes) => onUpdateExercise(exercise.id, { notes })}
+      />
     </View>
   );
 }

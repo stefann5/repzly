@@ -29,7 +29,7 @@ export default function ProgramEditorScreen() {
     removeWorkout,
   } = useProgram();
 
-  const { setCurrentWorkoutNumber } = useProgramStore();
+  const { setCurrentWorkoutNumber, setCurrentWorkoutOrder } = useProgramStore();
   const { loadExercises, addToCache } = useExerciseStore();
   const [isPickerVisible, setIsPickerVisible] = useState(false);
 
@@ -103,13 +103,15 @@ export default function ProgramEditorScreen() {
       const exerciseIds = exercises.map((e) => e.id);
       const newWorkoutNumber = addWorkout(currentWeek, exerciseIds);
       setCurrentWorkoutNumber(newWorkoutNumber);
+      setCurrentWorkoutOrder(workouts.length + 1);
       router.push("/workout-editor");
     }
     setIsPickerVisible(false);
   };
 
-  const handleWorkoutPress = (workoutNumber: number) => {
+  const handleWorkoutPress = (workoutNumber: number, order: number) => {
     setCurrentWorkoutNumber(workoutNumber);
+    setCurrentWorkoutOrder(order);
     router.push("/workout-editor");
   };
 
@@ -195,7 +197,7 @@ export default function ProgramEditorScreen() {
                 key={`workout-${workout.workout_number}`}
                 workout={workout}
                 order={index + 1}
-                onPress={() => handleWorkoutPress(workout.workout_number)}
+                onPress={() => handleWorkoutPress(workout.workout_number, index + 1)}
                 onDelete={() => handleDeleteWorkout(workout.workout_number)}
               />
             ))}

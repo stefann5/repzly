@@ -30,7 +30,7 @@ export default function WorkoutEditorScreen() {
     removeExercise,
   } = useProgram();
 
-  const { currentWorkoutNumber } = useProgramStore();
+  const { currentWorkoutNumber, currentWorkoutOrder } = useProgramStore();
   const { loadExercises, addToCache } = useExerciseStore();
   const [isPickerVisible, setIsPickerVisible] = useState(false);
   const [changingExerciseId, setChangingExerciseId] = useState<string | null>(null);
@@ -126,7 +126,7 @@ export default function WorkoutEditorScreen() {
           numberOfLines={1}
           styleClass="flex-1 mx-2 text-center"
         >
-          Workout {currentWorkoutNumber}
+          Week {currentWeek} • Workout {currentWorkoutOrder}
         </Label>
         <Button
           title={isLoading ? "Saving..." : "Save"}
@@ -134,13 +134,6 @@ export default function WorkoutEditorScreen() {
           onPress={handleSave}
           disabled={isLoading || !hasChanges}
         />
-      </View>
-
-      {/* Subheader */}
-      <View className="px-4 py-2 bg-gray-50 dark:bg-zinc-800">
-        <Label variant="caption" color="secondary">
-          {currentProgram.name} • Week {currentWeek}
-        </Label>
       </View>
 
       {/* Error message */}

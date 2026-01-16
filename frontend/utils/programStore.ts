@@ -27,6 +27,10 @@ interface ProgramState {
   currentWorkoutNumber: number | null;
   setCurrentWorkoutNumber: (workoutNumber: number | null) => void;
 
+  // Order of workout being edited within the week
+  currentWorkoutOrder: number | null;
+  setCurrentWorkoutOrder: (order: number | null) => void;
+
   // Workouts for current week (grouped)
   workouts: WorkoutGroup[];
   setWorkouts: (workouts: WorkoutGroup[]) => void;
@@ -63,6 +67,9 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
 
   currentWorkoutNumber: null,
   setCurrentWorkoutNumber: (workoutNumber) => set({ currentWorkoutNumber: workoutNumber }),
+
+  currentWorkoutOrder: null,
+  setCurrentWorkoutOrder: (order) => set({ currentWorkoutOrder: order }),
 
   workouts: [],
   setWorkouts: (workouts) => set({ workouts }),

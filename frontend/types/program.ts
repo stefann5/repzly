@@ -31,6 +31,20 @@ export interface UpdateProgramRequest {
   created?: boolean;
 }
 
+export interface ProgramSearchParams {
+  search?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface PaginatedProgramResponse {
+  programs: Program[];
+  total: number;
+  page: number;
+  limit: number;
+  total_pages: number;
+}
+
 // Workout Exercise types
 export interface Set {
   id?: string;

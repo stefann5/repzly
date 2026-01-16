@@ -1,4 +1,4 @@
-import { View, ScrollView, Pressable } from "react-native";
+import { View, ScrollView, Pressable, Switch } from "react-native";
 import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
 import { useForm, Controller } from "react-hook-form";
@@ -28,6 +28,7 @@ export default function CreateProgramScreen() {
   const router = useRouter();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [isPublic, setIsPublic] = useState(false);
 
   const isEditMode = !!currentProgram;
 
@@ -59,6 +60,8 @@ export default function CreateProgramScreen() {
       if (currentProgram.image_url) {
         setSelectedImage(currentProgram.image_url);
       }
+      // Set public status
+      setIsPublic(currentProgram.public ?? false);
     }
   }, [currentProgram, reset]);
 
@@ -93,6 +96,7 @@ export default function CreateProgramScreen() {
           description: data.description || undefined,
           tags,
           total_weeks: parseInt(data.total_weeks, 10),
+          public: isPublic,
         });
         programId = currentProgram.id;
       } else {
@@ -101,7 +105,7 @@ export default function CreateProgramScreen() {
           description: data.description || undefined,
           tags,
           total_weeks: parseInt(data.total_weeks, 10),
-          public: false,
+          public: isPublic,
         });
         programId = newProgram.id;
       }
@@ -238,10 +242,24 @@ export default function CreateProgramScreen() {
               onChangeText={onChange}
               onBlur={onBlur}
               error={errors.total_weeks?.message}
-              styleClass="mb-6"
+              styleClass="mb-4"
             />
           )}
         />
+
+        <View className="flex-row items-center justify-between mb-6">
+          <View>
+            <Label variant="caption" color="tertiary">
+              Make this program public (visible to other users)
+            </Label>
+          </View>
+          <Switch
+            value={isPublic}
+            onValueChange={setIsPublic}
+            trackColor={{ false: "#d1d5db", true: "#3b82f6" }}
+            thumbColor="#ffffff"
+          />
+        </View>
 
         <Button
           title={

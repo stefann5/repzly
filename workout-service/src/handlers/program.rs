@@ -1,12 +1,15 @@
 use axum::{
-    extract::{Multipart, Path, State},
+    extract::{Multipart, Path, Query, State},
     http::StatusCode,
     Json,
 };
 use axum_jwt_auth::Claims;
 
 use crate::error::AppError;
-use crate::models::{Claims as MyClaims, CreateProgramRequest, ProgramResponse, UpdateProgramRequest};
+use crate::models::{
+    Claims as MyClaims, CreateProgramRequest, PaginatedProgramResponse, ProgramResponse,
+    ProgramSearchParams, UpdateProgramRequest,
+};
 use crate::services;
 use crate::state::AppState;
 
@@ -159,4 +162,25 @@ pub async fn upload_program_image(
     ).await?;
 
     Ok(Json(updated))
+}
+
+/// GET /programs/search/public - Search public programs with pagination
+/// Searches programs that are public=true and have created_at set (published)
+pub async fn search_public_programs(
+    State(state): State<AppState>,
+    Query(params): Query<ProgramSearchParams>,
+) -> Result<Json<PaginatedProgramResponse>, AppError> {
+    let result = services::search_public_programs(&state.collections, params).await?;
+    Ok(Json(result))
+}
+
+/// GET /programs/search/mine - Search user's own programs with pagination
+pub async fn search_user_programs(
+    State(state): State<AppState>,
+    user: Claims<MyClaims>,
+    Query(params): Query<ProgramSearchParams>,
+) -> Result<Json<PaginatedProgramResponse>, AppError> {
+    let result =
+        services::search_user_programs(&state.collections, &user.claims.sub, params).await?;
+    Ok(Json(result))
 }

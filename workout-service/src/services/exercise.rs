@@ -1,6 +1,5 @@
 use bson::doc;
 use futures::TryStreamExt;
-use mongodb::options::FindOptions;
 
 use crate::db::Collections;
 use crate::error::AppError;
@@ -35,16 +34,19 @@ pub async fn get_exercise(
     Ok(exercise.into())
 }
 
+/// Get all exercises with pagination using MongoDB $facet aggregation
+/// This approach fetches both total count and paginated data in a single query,
+/// avoiding data inconsistency and improving performance
 pub async fn get_all_exercises(
     collections: &Collections,
     params: ExerciseQueryParams,
 ) -> Result<PaginatedExerciseResponse, AppError> {
     let page = params.page.unwrap_or(1).max(1);
     let limit = params.limit.unwrap_or(20).min(100);
-    let skip = (page - 1) * limit;
+    let skip = ((page - 1) * limit) as i64;
 
-    // Build filter based on search query
-    let filter = if let Some(search) = &params.search {
+    // Build match filter based on search query
+    let match_filter = if let Some(search) = &params.search {
         if search.trim().is_empty() {
             doc! {}
         } else {
@@ -55,28 +57,63 @@ pub async fn get_all_exercises(
         doc! {}
     };
 
-    // Get total count for pagination
-    let total = collections.exercises.count_documents(filter.clone()).await?;
+    // Build aggregation pipeline with $facet for efficient pagination
+    let pipeline = vec![
+        doc! { "$match": match_filter },
+        doc! { "$sort": { "name": 1 } },
+        doc! {
+            "$facet": {
+                "metadata": [{ "$count": "totalCount" }],
+                "data": [{ "$skip": skip }, { "$limit": limit as i64 }]
+            }
+        },
+    ];
 
-    // Build find options with pagination
-    let find_options = FindOptions::builder()
-        .skip(skip)
-        .limit(limit as i64)
-        .sort(doc! { "name": 1 })
-        .build();
+    let mut cursor = collections.exercises.aggregate(pipeline).await?;
 
-    let cursor = collections.exercises.find(filter).with_options(find_options).await?;
-    let exercises: Vec<Exercise> = cursor.try_collect().await?;
+    // Parse the aggregation result
+    if let Some(result) = cursor.try_next().await? {
+        let metadata = result.get_array("metadata").ok();
+        let data = result.get_array("data").ok();
 
-    let total_pages = (total as f64 / limit as f64).ceil() as u64;
+        let total = metadata
+            .and_then(|m| m.first())
+            .and_then(|d| d.as_document())
+            .and_then(|d| d.get_i32("totalCount").ok())
+            .unwrap_or(0) as u64;
 
-    Ok(PaginatedExerciseResponse {
-        exercises: exercises.into_iter().map(|e| e.into()).collect(),
-        total,
-        page,
-        limit,
-        total_pages,
-    })
+        let exercises: Vec<ExerciseResponse> = data
+            .map(|arr| {
+                arr.iter()
+                    .filter_map(|b| b.as_document())
+                    .filter_map(|d| bson::from_document::<Exercise>(d.clone()).ok())
+                    .map(|e| e.into())
+                    .collect()
+            })
+            .unwrap_or_default();
+
+        let total_pages = if total == 0 {
+            0
+        } else {
+            (total as f64 / limit as f64).ceil() as u64
+        };
+
+        Ok(PaginatedExerciseResponse {
+            exercises,
+            total,
+            page,
+            limit,
+            total_pages,
+        })
+    } else {
+        Ok(PaginatedExerciseResponse {
+            exercises: vec![],
+            total: 0,
+            page,
+            limit,
+            total_pages: 0,
+        })
+    }
 }
 
 pub async fn update_exercise(

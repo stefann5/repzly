@@ -69,3 +69,19 @@ impl From<Program> for ProgramResponse {
         }
     }
 }
+
+#[derive(Debug, Deserialize)]
+pub struct ProgramSearchParams {
+    pub search: Option<String>,
+    pub page: Option<u64>,
+    pub limit: Option<u64>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct PaginatedProgramResponse {
+    pub programs: Vec<ProgramResponse>,
+    pub total: u64,
+    pub page: u64,
+    pub limit: u64,
+    pub total_pages: u64,
+}

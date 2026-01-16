@@ -8,7 +8,10 @@ pub use exercise::{
     CreateExerciseRequest, Exercise, ExerciseQueryParams, ExerciseResponse, MuscleIntensity,
     PaginatedExerciseResponse, UpdateExerciseRequest,
 };
-pub use program::{CreateProgramRequest, Program, ProgramResponse, UpdateProgramRequest};
+pub use program::{
+    CreateProgramRequest, PaginatedProgramResponse, Program, ProgramResponse, ProgramSearchParams,
+    UpdateProgramRequest,
+};
 pub use workout_exercise::{
     DeleteExercisesRequest, DeleteWorkoutsRequest, Set, UpsertExercisesRequest, WeekResponse,
     WorkoutExercise, WorkoutGroup,

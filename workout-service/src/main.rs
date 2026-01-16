@@ -22,7 +22,8 @@ use db::Collections;
 use handlers::{
     create_exercise, create_program, delete_exercise, delete_exercises, delete_program,
     delete_workouts, get_exercise, get_exercises, get_program, get_programs, get_week,
-    update_exercise, update_program, upload_program_image, upsert_exercises,
+    search_public_programs, search_user_programs, update_exercise, update_program,
+    upload_program_image, upsert_exercises,
 };
 use state::AppState;
 
@@ -76,6 +77,9 @@ async fn main() {
         .allow_headers(Any);
 
     let app = Router::new()
+        // Program search routes (must be before parameterized routes)
+        .route("/programs/search/public", get(search_public_programs))
+        .route("/programs/search/mine", get(search_user_programs))
         // Program routes
         .route("/programs", get(get_programs).post(create_program))
         .route(
@@ -119,13 +123,24 @@ async fn create_indexes(collections: &Collections) {
         .ok();
 
     // Index for programs: user_id
-    let program_index = IndexModel::builder()
+    let program_user_index = IndexModel::builder()
         .keys(doc! { "user_id": 1 })
         .build();
 
     collections
         .programs
-        .create_index(program_index)
+        .create_index(program_user_index)
+        .await
+        .ok();
+
+    // Index for public programs search: public + created_at
+    let program_public_index = IndexModel::builder()
+        .keys(doc! { "public": 1, "created_at": -1 })
+        .build();
+
+    collections
+        .programs
+        .create_index(program_public_index)
         .await
         .ok();
 

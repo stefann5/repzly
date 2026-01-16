@@ -38,6 +38,7 @@ export default function ProgramEditorScreen() {
   // Load exercise cache on mount
   useEffect(() => {
     loadExercises();
+    loadWeek(currentProgram!.id, currentWeek);
   }, []);
 
   // Redirect if no program is loaded

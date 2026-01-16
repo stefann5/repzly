@@ -4,10 +4,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { Label } from "@/components/Label";
 import { Program } from "@/types/program";
 
-export function ProgramCard({ program, onPress, onDelete }: {
+export function ProgramCard({ program, onPress, onDelete, showDelete = true }: {
   program: Program;
   onPress: () => void;
-  onDelete: () => void;
+  onDelete?: () => void;
+  showDelete?: boolean;
 }) {
   const isDraft = !program.created_at;
 
@@ -54,9 +55,11 @@ export function ProgramCard({ program, onPress, onDelete }: {
               )}
             </View>
           </View>
-          <Pressable onPress={onDelete} className="p-2">
-            <Ionicons name="trash-outline" size={20} color="#ef4444" />
-          </Pressable>
+          {showDelete && onDelete && (
+            <Pressable onPress={onDelete} className="p-2">
+              <Ionicons name="trash-outline" size={20} color="#ef4444" />
+            </Pressable>
+          )}
         </View>
       </View>
     </Pressable>

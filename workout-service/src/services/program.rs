@@ -1,10 +1,13 @@
-use bson::doc;
+use bson::{doc, Document};
 use chrono::Utc;
 use futures::TryStreamExt;
 
 use crate::db::Collections;
 use crate::error::AppError;
-use crate::models::{CreateProgramRequest, Program, ProgramResponse, UpdateProgramRequest};
+use crate::models::{
+    CreateProgramRequest, PaginatedProgramResponse, Program, ProgramResponse, ProgramSearchParams,
+    UpdateProgramRequest,
+};
 
 pub async fn create_program(
     collections: &Collections,
@@ -139,4 +142,172 @@ pub async fn delete_program(
         .await?;
 
     Ok(())
+}
+
+/// Search public programs (public=true and created_at is not null)
+/// Uses MongoDB $facet aggregation for efficient pagination
+pub async fn search_public_programs(
+    collections: &Collections,
+    params: ProgramSearchParams,
+) -> Result<PaginatedProgramResponse, AppError> {
+    let page = params.page.unwrap_or(1).max(1);
+    let limit = params.limit.unwrap_or(20).min(100);
+    let skip = ((page - 1) * limit) as i64;
+
+    // Build match filter: must be public AND have created_at set
+    let mut match_filter = doc! {
+        "public": true,
+        "created_at": { "$ne": null }
+    };
+
+    // Add search by name OR tags (case-insensitive regex)
+    if let Some(search) = &params.search {
+        if !search.trim().is_empty() {
+            match_filter.insert("$or", vec![
+                doc! { "name": { "$regex": search, "$options": "i" } },
+                doc! { "tags": { "$regex": search, "$options": "i" } },
+            ]);
+        }
+    }
+
+    // Build aggregation pipeline with $facet for efficient pagination
+    let pipeline = vec![
+        doc! { "$match": match_filter },
+        doc! { "$sort": { "updated_at": -1 } },
+        doc! {
+            "$facet": {
+                "metadata": [{ "$count": "totalCount" }],
+                "data": [{ "$skip": skip }, { "$limit": limit as i64 }]
+            }
+        },
+    ];
+
+    let mut cursor = collections.programs.aggregate(pipeline).await?;
+
+    // Parse the aggregation result
+    if let Some(result) = cursor.try_next().await? {
+        let metadata = result.get_array("metadata").ok();
+        let data = result.get_array("data").ok();
+
+        let total = metadata
+            .and_then(|m| m.first())
+            .and_then(|d| d.as_document())
+            .and_then(|d| d.get_i32("totalCount").ok())
+            .unwrap_or(0) as u64;
+
+        let programs: Vec<ProgramResponse> = data
+            .map(|arr| {
+                arr.iter()
+                    .filter_map(|b| b.as_document())
+                    .filter_map(|d| bson::from_document::<Program>(d.clone()).ok())
+                    .map(|p| p.into())
+                    .collect()
+            })
+            .unwrap_or_default();
+
+        let total_pages = if total == 0 {
+            0
+        } else {
+            (total as f64 / limit as f64).ceil() as u64
+        };
+
+        Ok(PaginatedProgramResponse {
+            programs,
+            total,
+            page,
+            limit,
+            total_pages,
+        })
+    } else {
+        Ok(PaginatedProgramResponse {
+            programs: vec![],
+            total: 0,
+            page,
+            limit,
+            total_pages: 0,
+        })
+    }
+}
+
+/// Search user's own programs with pagination
+/// Uses MongoDB $facet aggregation for efficient pagination
+pub async fn search_user_programs(
+    collections: &Collections,
+    user_id: &str,
+    params: ProgramSearchParams,
+) -> Result<PaginatedProgramResponse, AppError> {
+    let page = params.page.unwrap_or(1).max(1);
+    let limit = params.limit.unwrap_or(20).min(100);
+    let skip = ((page - 1) * limit) as i64;
+
+    // Build match filter: must belong to user
+    let mut match_filter = doc! { "user_id": user_id };
+
+    // Add search by name OR tags (case-insensitive regex)
+    if let Some(search) = &params.search {
+        if !search.trim().is_empty() {
+            match_filter.insert("$or", vec![
+                doc! { "name": { "$regex": search, "$options": "i" } },
+                doc! { "tags": { "$regex": search, "$options": "i" } },
+            ]);
+        }
+    }
+
+    // Build aggregation pipeline with $facet for efficient pagination
+    let pipeline = vec![
+        doc! { "$match": match_filter },
+        doc! { "$sort": { "updated_at": -1 } },
+        doc! {
+            "$facet": {
+                "metadata": [{ "$count": "totalCount" }],
+                "data": [{ "$skip": skip }, { "$limit": limit as i64 }]
+            }
+        },
+    ];
+
+    let mut cursor = collections.programs.aggregate(pipeline).await?;
+
+    // Parse the aggregation result
+    if let Some(result) = cursor.try_next().await? {
+        let metadata = result.get_array("metadata").ok();
+        let data = result.get_array("data").ok();
+
+        let total = metadata
+            .and_then(|m| m.first())
+            .and_then(|d| d.as_document())
+            .and_then(|d| d.get_i32("totalCount").ok())
+            .unwrap_or(0) as u64;
+
+        let programs: Vec<ProgramResponse> = data
+            .map(|arr| {
+                arr.iter()
+                    .filter_map(|b| b.as_document())
+                    .filter_map(|d| bson::from_document::<Program>(d.clone()).ok())
+                    .map(|p| p.into())
+                    .collect()
+            })
+            .unwrap_or_default();
+
+        let total_pages = if total == 0 {
+            0
+        } else {
+            (total as f64 / limit as f64).ceil() as u64
+        };
+
+        Ok(PaginatedProgramResponse {
+            programs,
+            total,
+            page,
+            limit,
+            total_pages,
+        })
+    } else {
+        Ok(PaginatedProgramResponse {
+            programs: vec![],
+            total: 0,
+            page,
+            limit,
+            total_pages: 0,
+        })
+    }
 }

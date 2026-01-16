@@ -7,6 +7,8 @@ import {
   UpsertExercisesRequest,
   DeleteWorkoutsRequest,
   DeleteExercisesRequest,
+  ProgramSearchParams,
+  PaginatedProgramResponse,
 } from "@/types/program";
 
 export const programService = {
@@ -85,6 +87,30 @@ export const programService = {
         },
       }
     );
+    return response.data;
+  },
+
+  // Search public programs with pagination
+  searchPublic: async (params?: ProgramSearchParams): Promise<PaginatedProgramResponse> => {
+    const response = await workoutApi.get<PaginatedProgramResponse>("/programs/search/public", {
+      params: {
+        search: params?.search,
+        page: params?.page,
+        limit: params?.limit,
+      },
+    });
+    return response.data;
+  },
+
+  // Search user's own programs with pagination
+  searchMine: async (params?: ProgramSearchParams): Promise<PaginatedProgramResponse> => {
+    const response = await workoutApi.get<PaginatedProgramResponse>("/programs/search/mine", {
+      params: {
+        search: params?.search,
+        page: params?.page,
+        limit: params?.limit,
+      },
+    });
     return response.data;
   },
 };

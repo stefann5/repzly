@@ -29,7 +29,7 @@ export default function ProgramEditorScreen() {
     removeWorkout,
   } = useProgram();
 
-  const { setCurrentWorkoutNumber, setCurrentWorkoutOrder } = useProgramStore();
+  const { setCurrentWorkoutNumber, setCurrentWorkoutOrder, setCurrentProgram, copiedWorkout, copyWorkout, pasteWorkout, copiedWeek, copyWeek, pasteWeek } = useProgramStore();
   const { loadExercises, addToCache } = useExerciseStore();
   const [isPickerVisible, setIsPickerVisible] = useState(false);
 
@@ -189,6 +189,17 @@ export default function ProgramEditorScreen() {
             <Label variant="caption" color="tertiary" styleClass="mt-1">
               Add a workout to get started
             </Label>
+            {copiedWeek && copiedWeek.length > 0 && (
+              <Button
+                title="Paste week"
+                theme="secondary"
+                onPress={() => {
+                  const newLastWorkoutNumber = pasteWeek(currentWeek, currentProgram.last_workout_number);
+                  setCurrentProgram({ ...currentProgram, last_workout_number: newLastWorkoutNumber });
+                }}
+                styleClass="mt-4"
+              />
+            )}
           </View>
         ) : (
           <View>
@@ -199,18 +210,38 @@ export default function ProgramEditorScreen() {
                 order={index + 1}
                 onPress={() => handleWorkoutPress(workout.workout_number, index + 1)}
                 onDelete={() => handleDeleteWorkout(workout.workout_number)}
+                onCopy={() => copyWorkout(workout)}
               />
             ))}
+            <Button
+              title="Copy week"
+              theme="tertiary"
+              onPress={() => copyWeek(workouts)}
+              styleClass="mt-2"
+            />
           </View>
         )}
 
         {/* Add workout button */}
-        <Button
-          title="Add Workout"
-          theme="secondary"
-          onPress={handleAddWorkout}
-          styleClass="mt-4"
-        />
+        <View className="flex-row mt-4 gap-2">
+          <Button
+            title="Add Workout"
+            theme="primary"
+            onPress={handleAddWorkout}
+            styleClass="flex-1"
+          />
+          {copiedWorkout && (
+            <Button
+              title="Paste workout"
+              theme="secondary"
+              onPress={() => {
+                const newWorkoutNumber = pasteWorkout(currentWeek, currentProgram.last_workout_number);
+                setCurrentProgram({ ...currentProgram, last_workout_number: newWorkoutNumber });
+              }}
+              styleClass="flex-1"
+            />
+          )}
+        </View>
       </ScrollView>
 
       {/* Exercise picker modal for new workout */}

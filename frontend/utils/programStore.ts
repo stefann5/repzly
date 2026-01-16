@@ -45,6 +45,14 @@ interface ProgramState {
   copyExercise: (exercise: WorkoutExercise) => void;
   pasteExercise: (workoutNumber: number, week: number) => void;
 
+  copiedWorkout: WorkoutGroup | null;
+  copyWorkout: (workout: WorkoutGroup) => void;
+  pasteWorkout: (week: number, lastWorkoutNumber: number) => number;
+
+  copiedWeek: WorkoutGroup[] | null;
+  copyWeek: (workouts: WorkoutGroup[]) => void;
+  pasteWeek: (week: number, lastWorkoutNumber: number) => number;
+
   // Local workout operations
   addWorkout: (week: number, lastWorkoutNumber: number, exerciseIds: string[]) => number;
   addExercise: (workoutNumber: number, week: number, exerciseId: string) => void;
@@ -129,6 +137,96 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
       newChanges.set(newExercise.id, newExercise);
       return { workouts: newWorkouts, changedExercises: newChanges };
     });
+  },
+
+  copiedWorkout: null,
+  copyWorkout: (workout) => {
+    set({ copiedWorkout: workout });
+  },
+  pasteWorkout: (week, lastWorkoutNumber) => {
+    const copied = get().copiedWorkout;
+    if (!copied) return lastWorkoutNumber;
+
+    const newWorkoutNumber = lastWorkoutNumber + 1;
+    const programId = get().currentProgram?.id || "";
+
+    const newExercises: WorkoutExercise[] = copied.exercises.map((ex, index) => {
+      const newId = generateId();
+      return {
+        ...ex,
+        id: newId,
+        program_id: programId,
+        week,
+        workout_number: newWorkoutNumber,
+        order: index + 1,
+        sets: ex.sets.map((s, idx) => ({
+          ...s,
+          id: `${newId}-${idx + 1}`,
+          number: idx + 1,
+        })),
+      };
+    });
+
+    set((state) => {
+      const newWorkouts = [
+        ...state.workouts,
+        { workout_number: newWorkoutNumber, exercises: newExercises },
+      ];
+      const newChanges = new Map(state.changedExercises);
+      newExercises.forEach((e) => newChanges.set(e.id, e));
+      return { workouts: newWorkouts, changedExercises: newChanges };
+    });
+
+    return newWorkoutNumber;
+  },
+
+  copiedWeek: null,
+  copyWeek: (workouts) => {
+    set({ copiedWeek: workouts });
+  },
+  pasteWeek: (week, lastWorkoutNumber) => {
+    const copied = get().copiedWeek;
+    if (!copied || copied.length === 0) return lastWorkoutNumber;
+
+    const programId = get().currentProgram?.id || "";
+    let currentWorkoutNumber = lastWorkoutNumber;
+
+    const newWorkouts: WorkoutGroup[] = [];
+    const allNewExercises: WorkoutExercise[] = [];
+
+    copied.forEach((copiedWorkout) => {
+      currentWorkoutNumber += 1;
+      const newWorkoutNumber = currentWorkoutNumber;
+
+      const newExercises: WorkoutExercise[] = copiedWorkout.exercises.map((ex, index) => {
+        const newId = generateId();
+        return {
+          ...ex,
+          id: newId,
+          program_id: programId,
+          week,
+          workout_number: newWorkoutNumber,
+          order: index + 1,
+          sets: ex.sets.map((s, idx) => ({
+            ...s,
+            id: `${newId}-${idx + 1}`,
+            number: idx + 1,
+          })),
+        };
+      });
+
+      newWorkouts.push({ workout_number: newWorkoutNumber, exercises: newExercises });
+      allNewExercises.push(...newExercises);
+    });
+
+    set((state) => {
+      const updatedWorkouts = [...state.workouts, ...newWorkouts];
+      const newChanges = new Map(state.changedExercises);
+      allNewExercises.forEach((e) => newChanges.set(e.id, e));
+      return { workouts: updatedWorkouts, changedExercises: newChanges };
+    });
+
+    return currentWorkoutNumber;
   },
 
   addWorkout: (week, lastWorkoutNumber, exerciseIds) => {

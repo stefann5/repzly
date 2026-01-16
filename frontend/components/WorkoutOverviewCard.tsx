@@ -8,6 +8,7 @@ type WorkoutOverviewCardProps = {
   order: number;
   onPress: () => void;
   onDelete: () => void;
+  onCopy: () => void;
 };
 
 export function WorkoutOverviewCard({
@@ -15,6 +16,7 @@ export function WorkoutOverviewCard({
   order,
   onPress,
   onDelete,
+  onCopy,
 }: WorkoutOverviewCardProps) {
   const totalSets = workout.exercises.reduce((sum, ex) => sum + ex.sets.length, 0);
 
@@ -36,13 +38,21 @@ export function WorkoutOverviewCard({
           <Pressable
             onPress={(e) => {
               e.stopPropagation();
+              onCopy();
+            }}
+            className="p-2 mr-1"
+          >
+            <Ionicons name="copy-outline" size={20} color="#6B7280" />
+          </Pressable>
+          <Pressable
+            onPress={(e) => {
+              e.stopPropagation();
               onDelete();
             }}
             className="p-2 mr-1"
           >
             <Ionicons name="trash-outline" size={20} color="#ef4444" />
           </Pressable>
-          
         </View>
       </View>
       {workout.exercises.length > 0 && (

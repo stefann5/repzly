@@ -30,6 +30,7 @@ type ExerciseItemProps = {
   onDeleteSet: (exerciseId: string, setNumber: number) => void;
   onDeleteExercise: (exerciseId: string) => void;
   onChangeExercise: (exerciseId: string) => void;
+  onCopyExercise: (exercise: WorkoutExercise) => void;
   styleClass?: string;
 };
 
@@ -41,6 +42,7 @@ export function ExerciseItem({
   onDeleteSet,
   onDeleteExercise,
   onChangeExercise,
+  onCopyExercise,
   styleClass,
 }: ExerciseItemProps) {
   const colorScheme = useColorScheme();
@@ -79,6 +81,16 @@ export function ExerciseItem({
           />
         </Pressable>
         <View className="flex-row flex-1 items-center justify-end">
+          <Pressable
+            onPress={() => onCopyExercise(exercise)}
+            className="p-1 ml-2"
+          >
+            <Ionicons
+              name="copy-outline"
+              size={18}
+              color={isDark ? "#9CA3AF" : "#6B7280"}
+            />
+          </Pressable>
           <Pressable
             onPress={() => setIsNotesModalVisible(true)}
             className="p-1 ml-2"

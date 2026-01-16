@@ -30,7 +30,7 @@ export default function WorkoutEditorScreen() {
     removeExercise,
   } = useProgram();
 
-  const { currentWorkoutNumber, currentWorkoutOrder } = useProgramStore();
+  const { currentWorkoutNumber, currentWorkoutOrder, copiedExercise, copyExercise, pasteExercise } = useProgramStore();
   const { loadExercises, addToCache } = useExerciseStore();
   const [isPickerVisible, setIsPickerVisible] = useState(false);
   const [changingExerciseId, setChangingExerciseId] = useState<string | null>(null);
@@ -172,18 +172,29 @@ export default function WorkoutEditorScreen() {
                   onDeleteSet={deleteSet}
                   onDeleteExercise={handleDeleteExercise}
                   onChangeExercise={handleChangeExercise}
+                  onCopyExercise={copyExercise}
                 />
               ))}
           </View>
         )}
 
         {/* Add exercise button */}
-        <Button
-          title="Add Exercise"
-          theme="primary"
-          onPress={handleAddExercise}
-          styleClass="mt-4"
-        />
+        <View className="flex-row mt-4 gap-2">
+          <Button
+            title="Add Exercise"
+            theme="primary"
+            onPress={handleAddExercise}
+            styleClass="flex-1"
+          />
+          {copiedExercise && currentWorkoutNumber && (
+            <Button
+              title="Paste exercise"
+              theme="secondary"
+              onPress={() => pasteExercise(currentWorkoutNumber, currentWeek)}
+              styleClass="flex-1"
+            />
+          )}
+        </View>
       </ScrollView>
 
       {/* Exercise picker modal */}

@@ -40,6 +40,11 @@ interface ProgramState {
   markExerciseChanged: (exercise: WorkoutExercise) => void;
   clearChanges: () => void;
 
+  // Clipboard for copy/paste
+  copiedExercise: WorkoutExercise | null;
+  copyExercise: (exercise: WorkoutExercise) => void;
+  pasteExercise: (workoutNumber: number, week: number) => void;
+
   // Local workout operations
   addWorkout: (week: number, lastWorkoutNumber: number, exerciseIds: string[]) => number;
   addExercise: (workoutNumber: number, week: number, exerciseId: string) => void;
@@ -83,6 +88,48 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
     });
   },
   clearChanges: () => set({ changedExercises: new Map() }),
+
+  copiedExercise: null,
+  copyExercise: (exercise) => {
+    set({ copiedExercise: exercise });
+  },
+  pasteExercise: (workoutNumber, week) => {
+    const copied = get().copiedExercise;
+    if (!copied) return;
+
+    const newId = generateId();
+    const programId = get().currentProgram?.id || "";
+
+    set((state) => {
+      const workout = state.workouts.find((w) => w.workout_number === workoutNumber);
+      const newOrder = workout ? workout.exercises.length + 1 : 1;
+
+      const newExercise: WorkoutExercise = {
+        ...copied,
+        id: newId,
+        program_id: programId,
+        week,
+        workout_number: workoutNumber,
+        order: newOrder,
+        sets: copied.sets.map((s, idx) => ({
+          ...s,
+          id: `${newId}-${idx + 1}`,
+          number: idx + 1,
+        })),
+      };
+
+      const newWorkouts = state.workouts.map((w) => {
+        if (w.workout_number === workoutNumber) {
+          return { ...w, exercises: [...w.exercises, newExercise] };
+        }
+        return w;
+      });
+
+      const newChanges = new Map(state.changedExercises);
+      newChanges.set(newExercise.id, newExercise);
+      return { workouts: newWorkouts, changedExercises: newChanges };
+    });
+  },
 
   addWorkout: (week, lastWorkoutNumber, exerciseIds) => {
     const newWorkoutNumber = lastWorkoutNumber + 1;

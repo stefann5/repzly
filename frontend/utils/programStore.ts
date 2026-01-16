@@ -63,6 +63,7 @@ interface ProgramState {
   deleteWorkout: (workoutNumber: number) => void;
   deleteExercise: (exerciseId: string) => void;
   deleteSet: (exerciseId: string, setNumber: number) => void;
+  reorderExercises: (workoutNumber: number, exerciseIds: string[]) => void;
 
   // Get all changed exercises as array
   getChangedExercisesArray: () => WorkoutExercise[];
@@ -457,5 +458,35 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
 
   getChangedExercisesArray: () => {
     return Array.from(get().changedExercises.values());
+  },
+
+  reorderExercises: (workoutNumber, exerciseIds) => {
+    set((state) => {
+      const newWorkouts = state.workouts.map((w) => {
+        if (w.workout_number === workoutNumber) {
+          const reorderedExercises = exerciseIds
+            .map((id, index) => {
+              const exercise = w.exercises.find((e) => e.id === id);
+              if (exercise) {
+                return { ...exercise, order: index + 1 };
+              }
+              return null;
+            })
+            .filter((e): e is WorkoutExercise => e !== null);
+
+          return { ...w, exercises: reorderedExercises };
+        }
+        return w;
+      });
+
+      // Mark all reordered exercises as changed
+      const newChanges = new Map(state.changedExercises);
+      const workout = newWorkouts.find((w) => w.workout_number === workoutNumber);
+      if (workout) {
+        workout.exercises.forEach((e) => newChanges.set(e.id, e));
+      }
+
+      return { workouts: newWorkouts, changedExercises: newChanges };
+    });
   },
 }));

@@ -7,6 +7,7 @@ import { Button } from "@/components/Button";
 import { SafeAreaView } from "@/components/SafeAreaView";
 import { ExerciseItem } from "@/components/ExerciseItem";
 import { ExercisePickerModal } from "@/components/ExercisePickerModal";
+import { ReorderExercisesModal } from "@/components/ReorderExercisesModal";
 import { useProgram } from "@/hooks/useProgram";
 import { useProgramStore } from "@/utils/programStore";
 import { useExerciseStore } from "@/utils/exerciseStore";
@@ -30,10 +31,11 @@ export default function WorkoutEditorScreen() {
     removeExercise,
   } = useProgram();
 
-  const { currentWorkoutNumber, currentWorkoutOrder, copiedExercise, copyExercise, pasteExercise } = useProgramStore();
+  const { currentWorkoutNumber, currentWorkoutOrder, copiedExercise, copyExercise, pasteExercise, reorderExercises } = useProgramStore();
   const { loadExercises, addToCache } = useExerciseStore();
   const [isPickerVisible, setIsPickerVisible] = useState(false);
   const [changingExerciseId, setChangingExerciseId] = useState<string | null>(null);
+  const [isReorderModalVisible, setIsReorderModalVisible] = useState(false);
 
   // Load exercise cache on mount
   useEffect(() => {
@@ -175,6 +177,14 @@ export default function WorkoutEditorScreen() {
                   onCopyExercise={copyExercise}
                 />
               ))}
+            {currentWorkout.exercises.length > 1 && (
+              <Button
+                title="Reorder exercises"
+                theme="tertiary"
+                onPress={() => setIsReorderModalVisible(true)}
+                styleClass="mt-2"
+              />
+            )}
           </View>
         )}
 
@@ -207,6 +217,16 @@ export default function WorkoutEditorScreen() {
         onSelect={handleExercisesSelected}
         multiSelect={!changingExerciseId}
       />
+
+      {/* Reorder exercises modal */}
+      {currentWorkout && currentWorkoutNumber && (
+        <ReorderExercisesModal
+          visible={isReorderModalVisible}
+          exercises={currentWorkout.exercises}
+          onClose={() => setIsReorderModalVisible(false)}
+          onSave={(exerciseIds) => reorderExercises(currentWorkoutNumber, exerciseIds)}
+        />
+      )}
     </SafeAreaView>
   );
 }

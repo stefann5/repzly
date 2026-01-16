@@ -1,4 +1,4 @@
-import { View, Pressable, TextInput, useColorScheme } from "react-native";
+import { View, Pressable, useColorScheme } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
 import { Label } from "./Label";
@@ -6,6 +6,7 @@ import { SetRow } from "./SetRow";
 import { Button } from "./Button";
 import { WorkoutExercise, Set } from "@/types/program";
 import { cn } from "@/utils/utils";
+import { useExerciseStore } from "@/utils/exerciseStore";
 
 const VOLUME_OPTIONS = [
   { label: "Reps", value: "reps", isRange: false },
@@ -26,6 +27,7 @@ type ExerciseItemProps = {
   onAddSet: (exerciseId: string) => void;
   onDeleteSet: (exerciseId: string, setNumber: number) => void;
   onDeleteExercise: (exerciseId: string) => void;
+  onChangeExercise: (exerciseId: string) => void;
   styleClass?: string;
 };
 
@@ -36,10 +38,12 @@ export function ExerciseItem({
   onAddSet,
   onDeleteSet,
   onDeleteExercise,
+  onChangeExercise,
   styleClass,
 }: ExerciseItemProps) {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+  const { getExerciseName } = useExerciseStore();
 
   return (
     <View
@@ -50,22 +54,28 @@ export function ExerciseItem({
     >
       {/* Header */}
       <View className="flex-row items-center justify-between p-3 bg-gray-50 dark:bg-zinc-800">
-        <View className="flex-row items-center flex-1">
-          <TextInput
-            style={{
-              flex: 1,
-              fontSize: 16,
-              color: isDark ? "#ffffff" : "#000000",
-            }}
-            placeholder="Exercise name"
-            placeholderTextColor="#9CA3AF"
-            value={exercise.exercise_id}
-            onChangeText={(text) => onUpdateExercise(exercise.id, { exercise_id: text })}
+        <Pressable
+          onPress={() => onChangeExercise(exercise.id)}
+          className="flex-row items-center flex-1"
+        >
+          <Label
+            variant="body"
+            weight="semibold"
+            numberOfLines={1}
+            styleClass="flex-1"
+          >
+            {getExerciseName(exercise.exercise_id)}
+          </Label>
+          <Ionicons
+            name="chevron-down"
+            size={16}
+            color={isDark ? "#9CA3AF" : "#6B7280"}
+            style={{ marginLeft: 4 }}
           />
-        </View>
+        </Pressable>
         <Pressable
           onPress={() => onDeleteExercise(exercise.id)}
-          className="p-1"
+          className="p-1 ml-2"
         >
           <Ionicons name="trash-outline" size={18} color="#ef4444" />
         </Pressable>

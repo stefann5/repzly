@@ -1,13 +1,16 @@
 import { View, ScrollView, ActivityIndicator } from "react-native";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Label } from "@/components/Label";
 import { Button } from "@/components/Button";
 import { SafeAreaView } from "@/components/SafeAreaView";
 import { ExerciseItem } from "@/components/ExerciseItem";
+import { ExercisePickerModal } from "@/components/ExercisePickerModal";
 import { useProgram } from "@/hooks/useProgram";
 import { useProgramStore } from "@/utils/programStore";
+import { useExerciseStore } from "@/utils/exerciseStore";
+import { Exercise } from "@/types/exercise";
 
 export default function WorkoutEditorScreen() {
   const router = useRouter();
@@ -19,7 +22,7 @@ export default function WorkoutEditorScreen() {
     error,
     hasChanges,
     saveChanges,
-    addExercise,
+    addMultipleExercises,
     addSet,
     updateExercise,
     updateSet,
@@ -28,6 +31,14 @@ export default function WorkoutEditorScreen() {
   } = useProgram();
 
   const { currentWorkoutNumber } = useProgramStore();
+  const { loadExercises, addToCache } = useExerciseStore();
+  const [isPickerVisible, setIsPickerVisible] = useState(false);
+  const [changingExerciseId, setChangingExerciseId] = useState<string | null>(null);
+
+  // Load exercise cache on mount
+  useEffect(() => {
+    loadExercises();
+  }, []);
 
   // Get current workout
   const currentWorkout = workouts.find(
@@ -70,9 +81,30 @@ export default function WorkoutEditorScreen() {
   };
 
   const handleAddExercise = () => {
-    if (currentWorkoutNumber) {
-      addExercise(currentWorkoutNumber, currentWeek);
+    setChangingExerciseId(null);
+    setIsPickerVisible(true);
+  };
+
+  const handleChangeExercise = (exerciseId: string) => {
+    setChangingExerciseId(exerciseId);
+    setIsPickerVisible(true);
+  };
+
+  const handleExercisesSelected = (exercises: Exercise[]) => {
+    if (exercises.length > 0) {
+      addToCache(exercises);
+
+      if (changingExerciseId) {
+        // Changing an existing exercise - use only the first selected
+        updateExercise(changingExerciseId, { exercise_id: exercises[0].id });
+      } else if (currentWorkoutNumber) {
+        // Adding new exercises
+        const exerciseIds = exercises.map((e) => e.id);
+        addMultipleExercises(currentWorkoutNumber, currentWeek, exerciseIds);
+      }
     }
+    setIsPickerVisible(false);
+    setChangingExerciseId(null);
   };
 
   const handleDeleteExercise = async (exerciseId: string) => {
@@ -146,6 +178,7 @@ export default function WorkoutEditorScreen() {
                   onAddSet={addSet}
                   onDeleteSet={deleteSet}
                   onDeleteExercise={handleDeleteExercise}
+                  onChangeExercise={handleChangeExercise}
                 />
               ))}
           </View>
@@ -154,11 +187,22 @@ export default function WorkoutEditorScreen() {
         {/* Add exercise button */}
         <Button
           title="Add Exercise"
-          theme="secondary"
+          theme="primary"
           onPress={handleAddExercise}
           styleClass="mt-4"
         />
       </ScrollView>
+
+      {/* Exercise picker modal */}
+      <ExercisePickerModal
+        visible={isPickerVisible}
+        onClose={() => {
+          setIsPickerVisible(false);
+          setChangingExerciseId(null);
+        }}
+        onSelect={handleExercisesSelected}
+        multiSelect={!changingExerciseId}
+      />
     </SafeAreaView>
   );
 }

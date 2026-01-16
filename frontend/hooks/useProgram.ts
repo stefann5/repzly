@@ -18,6 +18,7 @@ export function useProgram() {
     setWorkouts,
     addWorkout,
     addExercise,
+    addMultipleExercises,
     addSet,
     updateExercise,
     updateSet,
@@ -238,8 +239,8 @@ export function useProgram() {
     removeProgram,
 
     // Workout operations
-    addWorkout: (week: number) => {
-      const newWorkoutNumber = addWorkout(week, currentProgram?.last_workout_number || 0);
+    addWorkout: (week: number, exerciseIds: string[]) => {
+      const newWorkoutNumber = addWorkout(week, currentProgram?.last_workout_number || 0, exerciseIds);
       // Update local program with new last_workout_number
       if (currentProgram) {
         setCurrentProgram({ ...currentProgram, last_workout_number: newWorkoutNumber });
@@ -250,6 +251,7 @@ export function useProgram() {
 
     // Exercise operations
     addExercise,
+    addMultipleExercises,
     updateExercise,
     removeExercise,
 

@@ -20,8 +20,9 @@ mod state;
 use config::AppConfig;
 use db::Collections;
 use handlers::{
-    create_program, delete_exercises, delete_program, delete_workouts, get_program, get_programs,
-    get_week, update_program, upsert_exercises,
+    create_exercise, create_program, delete_exercise, delete_exercises, delete_program,
+    delete_workouts, get_exercise, get_exercises, get_program, get_programs, get_week,
+    update_exercise, update_program, upsert_exercises,
 };
 use state::AppState;
 
@@ -77,6 +78,12 @@ async fn main() {
         .route(
             "/programs/{program_id}/workout-exercises",
             put(upsert_exercises).delete(delete_exercises),
+        )
+        // Exercise catalog routes
+        .route("/exercises", get(get_exercises).post(create_exercise))
+        .route(
+            "/exercises/{exercise_id}",
+            get(get_exercise).patch(update_exercise).delete(delete_exercise),
         )
         .layer(cors)
         .with_state(state);

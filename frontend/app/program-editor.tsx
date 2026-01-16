@@ -1,5 +1,5 @@
 import { View, ScrollView, ActivityIndicator } from "react-native";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Label } from "@/components/Label";
@@ -7,8 +7,11 @@ import { Button } from "@/components/Button";
 import { SafeAreaView } from "@/components/SafeAreaView";
 import { WeekSelector } from "@/components/WeekSelector";
 import { WorkoutOverviewCard } from "@/components/WorkoutOverviewCard";
+import { ExercisePickerModal } from "@/components/ExercisePickerModal";
 import { useProgram } from "@/hooks/useProgram";
 import { useProgramStore } from "@/utils/programStore";
+import { useExerciseStore } from "@/utils/exerciseStore";
+import { Exercise } from "@/types/exercise";
 
 export default function ProgramEditorScreen() {
   const router = useRouter();
@@ -27,6 +30,13 @@ export default function ProgramEditorScreen() {
   } = useProgram();
 
   const { setCurrentWorkoutNumber } = useProgramStore();
+  const { loadExercises, addToCache } = useExerciseStore();
+  const [isPickerVisible, setIsPickerVisible] = useState(false);
+
+  // Load exercise cache on mount
+  useEffect(() => {
+    loadExercises();
+  }, []);
 
   // Redirect if no program is loaded
   useEffect(() => {
@@ -82,9 +92,20 @@ export default function ProgramEditorScreen() {
   };
 
   const handleAddWorkout = () => {
-    const newWorkoutNumber = addWorkout(currentWeek);
-    setCurrentWorkoutNumber(newWorkoutNumber);
-    router.push("/workout-editor");
+    setIsPickerVisible(true);
+  };
+
+  const handleExercisesSelected = (exercises: Exercise[]) => {
+    if (exercises.length > 0) {
+      // Add exercises to cache for name lookup
+      addToCache(exercises);
+      // Create workout with selected exercises
+      const exerciseIds = exercises.map((e) => e.id);
+      const newWorkoutNumber = addWorkout(currentWeek, exerciseIds);
+      setCurrentWorkoutNumber(newWorkoutNumber);
+      router.push("/workout-editor");
+    }
+    setIsPickerVisible(false);
   };
 
   const handleWorkoutPress = (workoutNumber: number) => {
@@ -189,6 +210,14 @@ export default function ProgramEditorScreen() {
           styleClass="mt-4"
         />
       </ScrollView>
+
+      {/* Exercise picker modal for new workout */}
+      <ExercisePickerModal
+        visible={isPickerVisible}
+        onClose={() => setIsPickerVisible(false)}
+        onSelect={handleExercisesSelected}
+        multiSelect={true}
+      />
     </SafeAreaView>
   );
 }

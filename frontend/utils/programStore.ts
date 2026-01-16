@@ -37,8 +37,9 @@ interface ProgramState {
   clearChanges: () => void;
 
   // Local workout operations
-  addWorkout: (week: number, lastWorkoutNumber: number) => number;
-  addExercise: (workoutNumber: number, week: number) => void;
+  addWorkout: (week: number, lastWorkoutNumber: number, exerciseIds: string[]) => number;
+  addExercise: (workoutNumber: number, week: number, exerciseId: string) => void;
+  addMultipleExercises: (workoutNumber: number, week: number, exerciseIds: string[]) => void;
   addSet: (exerciseId: string) => void;
   updateExercise: (exerciseId: string, updates: Partial<WorkoutExercise>) => void;
   updateSet: (exerciseId: string, setNumber: number, updates: Partial<Set>) => void;
@@ -76,42 +77,46 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
   },
   clearChanges: () => set({ changedExercises: new Map() }),
 
-  addWorkout: (week, lastWorkoutNumber) => {
+  addWorkout: (week, lastWorkoutNumber, exerciseIds) => {
     const newWorkoutNumber = lastWorkoutNumber + 1;
-    const exerciseId = generateId();
-    const newExercise: WorkoutExercise = {
-      id: exerciseId,
-      program_id: get().currentProgram?.id || "",
-      week,
-      workout_number: newWorkoutNumber,
-      order: 1,
-      exercise_id: "",
-      sets: [{ id: `${exerciseId}-1`, number: 1 }],
-    };
+    const programId = get().currentProgram?.id || "";
+
+    const newExercises: WorkoutExercise[] = exerciseIds.map((exId, index) => {
+      const id = generateId();
+      return {
+        id,
+        program_id: programId,
+        week,
+        workout_number: newWorkoutNumber,
+        order: index + 1,
+        exercise_id: exId,
+        sets: [{ id: `${id}-1`, number: 1 }],
+      };
+    });
 
     set((state) => {
       const newWorkouts = [
         ...state.workouts,
-        { workout_number: newWorkoutNumber, exercises: [newExercise] },
+        { workout_number: newWorkoutNumber, exercises: newExercises },
       ];
       const newChanges = new Map(state.changedExercises);
-      newChanges.set(newExercise.id, newExercise);
+      newExercises.forEach((e) => newChanges.set(e.id, e));
       return { workouts: newWorkouts, changedExercises: newChanges };
     });
 
     return newWorkoutNumber;
   },
 
-  addExercise: (workoutNumber, week) => {
-    const exerciseId = generateId();
+  addExercise: (workoutNumber, week, exerciseId) => {
+    const id = generateId();
     const newExercise: WorkoutExercise = {
-      id: exerciseId,
+      id,
       program_id: get().currentProgram?.id || "",
       week,
       workout_number: workoutNumber,
       order: 0,
-      exercise_id: "",
-      sets: [{ id: `${exerciseId}-1`, number: 1 }],
+      exercise_id: exerciseId,
+      sets: [{ id: `${id}-1`, number: 1 }],
     };
 
     set((state) => {
@@ -125,6 +130,39 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
       });
       const newChanges = new Map(state.changedExercises);
       newChanges.set(newExercise.id, newExercise);
+      return { workouts: newWorkouts, changedExercises: newChanges };
+    });
+  },
+
+  addMultipleExercises: (workoutNumber, week, exerciseIds) => {
+    const programId = get().currentProgram?.id || "";
+
+    set((state) => {
+      const workout = state.workouts.find((w) => w.workout_number === workoutNumber);
+      const startOrder = workout ? workout.exercises.length + 1 : 1;
+
+      const newExercises: WorkoutExercise[] = exerciseIds.map((exId, index) => {
+        const id = generateId();
+        return {
+          id,
+          program_id: programId,
+          week,
+          workout_number: workoutNumber,
+          order: startOrder + index,
+          exercise_id: exId,
+          sets: [{ id: `${id}-1`, number: 1 }],
+        };
+      });
+
+      const newWorkouts = state.workouts.map((w) => {
+        if (w.workout_number === workoutNumber) {
+          return { ...w, exercises: [...w.exercises, ...newExercises] };
+        }
+        return w;
+      });
+
+      const newChanges = new Map(state.changedExercises);
+      newExercises.forEach((e) => newChanges.set(e.id, e));
       return { workouts: newWorkouts, changedExercises: newChanges };
     });
   },

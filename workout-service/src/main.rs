@@ -22,7 +22,7 @@ use db::Collections;
 use handlers::{
     create_exercise, create_program, delete_exercise, delete_exercises, delete_program,
     delete_workouts, get_exercise, get_exercises, get_program, get_programs, get_week,
-    update_exercise, update_program, upsert_exercises,
+    update_exercise, update_program, upload_program_image, upsert_exercises,
 };
 use state::AppState;
 
@@ -55,9 +55,18 @@ async fn main() {
         .build()
         .unwrap();
 
+    // Setup AWS S3 client
+    let aws_config = aws_config::from_env()
+        .region(aws_config::Region::new(config.aws_region.clone()))
+        .load()
+        .await;
+    let s3_client = aws_sdk_s3::Client::new(&aws_config);
+
     let state = AppState {
         decoder: Arc::new(decoder),
         collections,
+        s3_client,
+        s3_bucket: config.s3_bucket_name,
     };
 
     // CORS configuration
@@ -73,6 +82,7 @@ async fn main() {
             "/programs/{program_id}",
             get(get_program).patch(update_program).delete(delete_program),
         )
+        .route("/programs/{program_id}/image", post(upload_program_image))
         // Workout exercise routes
         .route("/programs/{program_id}/workouts", get(get_week).delete(delete_workouts))
         .route(

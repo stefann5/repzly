@@ -24,6 +24,7 @@ pub async fn create_program(
         user_id: user_id.to_string(),
         name: req.name,
         description: req.description,
+        image_url: None,
         tags: req.tags.unwrap_or_default(),
         total_weeks: req.total_weeks.unwrap_or(1),
         last_workout_number: 0,
@@ -85,6 +86,9 @@ pub async fn update_program(
     }
     if let Some(description) = req.description {
         update_doc.insert("description", description);
+    }
+    if let Some(image_url) = req.image_url {
+        update_doc.insert("image_url", image_url);
     }
     if let Some(tags) = req.tags {
         update_doc.insert("tags", tags);

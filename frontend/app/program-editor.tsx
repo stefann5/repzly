@@ -8,6 +8,7 @@ import { SafeAreaView } from "@/components/SafeAreaView";
 import { WeekSelector } from "@/components/WeekSelector";
 import { WorkoutOverviewCard } from "@/components/WorkoutOverviewCard";
 import { ExercisePickerModal } from "@/components/ExercisePickerModal";
+import { ReorderWorkoutsModal } from "@/components/ReorderWorkoutsModal";
 import { useProgram } from "@/hooks/useProgram";
 import { useProgramStore } from "@/utils/programStore";
 import { useExerciseStore } from "@/utils/exerciseStore";
@@ -29,9 +30,10 @@ export default function ProgramEditorScreen() {
     removeWorkout,
   } = useProgram();
 
-  const { setCurrentWorkoutNumber, setCurrentWorkoutOrder, setCurrentProgram, copiedWorkout, copyWorkout, pasteWorkout, copiedWeek, copyWeek, pasteWeek } = useProgramStore();
+  const { setCurrentWorkoutNumber, setCurrentWorkoutOrder, setCurrentProgram, copiedWorkout, copyWorkout, pasteWorkout, copiedWeek, copyWeek, pasteWeek, reorderWorkouts } = useProgramStore();
   const { loadExercises, addToCache } = useExerciseStore();
   const [isPickerVisible, setIsPickerVisible] = useState(false);
+  const [isReorderModalVisible, setIsReorderModalVisible] = useState(false);
 
   // Load exercise cache on mount
   useEffect(() => {
@@ -213,12 +215,22 @@ export default function ProgramEditorScreen() {
                 onCopy={() => copyWorkout(workout)}
               />
             ))}
-            <Button
-              title="Copy week"
-              theme="tertiary"
-              onPress={() => copyWeek(workouts)}
-              styleClass="mt-2"
-            />
+            <View className="flex-row mt-2 gap-2">
+              {workouts.length > 1 && (
+                <Button
+                  title="Reorder workouts"
+                  theme="tertiary"
+                  onPress={() => setIsReorderModalVisible(true)}
+                  styleClass="flex-1"
+                />
+              )}
+              <Button
+                title="Copy week"
+                theme="tertiary"
+                onPress={() => copyWeek(workouts)}
+                styleClass="flex-1"
+              />
+            </View>
           </View>
         )}
 
@@ -250,6 +262,14 @@ export default function ProgramEditorScreen() {
         onClose={() => setIsPickerVisible(false)}
         onSelect={handleExercisesSelected}
         multiSelect={true}
+      />
+
+      {/* Reorder workouts modal */}
+      <ReorderWorkoutsModal
+        visible={isReorderModalVisible}
+        workouts={workouts}
+        onClose={() => setIsReorderModalVisible(false)}
+        onSave={reorderWorkouts}
       />
     </SafeAreaView>
   );

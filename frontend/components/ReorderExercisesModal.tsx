@@ -71,11 +71,11 @@ export function ReorderExercisesModal({
         </View>
 
         {/* Content */}
-        <ScrollView className="flex-1 p-4">
+        <ScrollView className="flex-1 px-4">
           {orderedExercises.map((exercise, index) => (
             <View
               key={exercise.id}
-              className="flex-row items-center p-3 mb-2 bg-gray-100 dark:bg-zinc-800 rounded-lg"
+              className="flex-row items-center p-3 my-1 bg-gray-100 dark:bg-zinc-800 rounded-lg"
             >
               <View className="w-8 h-8 items-center justify-center bg-blue-500 rounded-full mr-3">
                 <Label variant="body" weight="semibold" styleClass="text-white">
@@ -127,7 +127,7 @@ export function ReorderExercisesModal({
             styleClass="flex-1 mr-2"
           />
           <Button
-            title="Save"
+            title="Ok"
             theme="primary"
             onPress={handleSave}
             styleClass="flex-1 ml-2"

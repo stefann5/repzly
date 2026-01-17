@@ -1,4 +1,5 @@
 import { View, FlatList, ActivityIndicator, Alert } from "react-native";
+import { Toast } from "toastify-react-native";
 import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -180,7 +181,10 @@ export default function ProgramEditorScreen() {
         <Button
           title="Copy week"
           theme="tertiary"
-          onPress={() => copyWeek(workouts)}
+          onPress={() => {
+              copyWeek(workouts);
+              Toast.success("Week copied");
+            }}
           styleClass="flex-1"
         />
         )}
@@ -216,7 +220,10 @@ export default function ProgramEditorScreen() {
             order={index + 1}
             onPress={() => handleWorkoutPress(item.workout_number, index + 1)}
             onDelete={() => handleDeleteWorkout(item.workout_number)}
-            onCopy={() => copyWorkout(item)}
+            onCopy={() => {
+              copyWorkout(item);
+              Toast.success("Workout copied");
+            }}
           />
         )}
         contentContainerStyle={{ padding: 16, paddingTop: 16 }}

@@ -1,4 +1,5 @@
 import { View, FlatList, ActivityIndicator, Alert } from "react-native";
+import { Toast } from "toastify-react-native";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -203,7 +204,10 @@ export default function WorkoutEditorScreen() {
             onDeleteSet={deleteSet}
             onDeleteExercise={handleDeleteExercise}
             onChangeExercise={handleChangeExercise}
-            onCopyExercise={copyExercise}
+            onCopyExercise={(exercise) => {
+              copyExercise(exercise);
+              Toast.success("Exercise copied");
+            }}
             onOpenNotes={handleOpenNotes}
           />
         )}

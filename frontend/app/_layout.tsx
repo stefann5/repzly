@@ -15,6 +15,8 @@ import { useColorScheme } from "react-native";
 import * as SystemUI from 'expo-system-ui';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
+import ToastManager from 'toastify-react-native';
+import { toastConfig } from '@/components/Toast';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -53,6 +55,12 @@ export default function RootLayout() {
     <KeyboardProvider>
       <SafeAreaProvider>
         <React.Fragment>
+          <ToastManager
+            useModal={false}
+            showCloseIcon={false}
+            showProgressBar={false}
+            config={toastConfig}
+          />
           <StatusBar style="auto" />
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Protected guard={isLoggedIn}>

@@ -1,4 +1,4 @@
-import { View, FlatList, RefreshControl, ActivityIndicator } from "react-native";
+import { View, FlatList, RefreshControl, ActivityIndicator, TextInput, Pressable } from "react-native";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -137,12 +137,23 @@ export default function ProgramsScreen() {
         </View>
 
         <View className="mb-2">
-          <Input
-            placeholder="Search by name or tag..."
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            returnKeyType="search"
-          />
+          <View className="flex-row items-center bg-gray-100 dark:bg-zinc-800 rounded-lg px-3 py-2">
+            <Ionicons name="search" size={20} color="#9CA3AF" />
+            <TextInput
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Search by name or tag..."
+              placeholderTextColor="#9CA3AF"
+              className="flex-1 ml-2 text-base text-gray-900 dark:text-white"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            {searchQuery.length > 0 && (
+              <Pressable onPress={() => setSearchQuery("")}>
+                <Ionicons name="close-circle" size={20} color="#9CA3AF" />
+              </Pressable>
+            )}
+          </View>
         </View>
 
         {total > 0 && (
@@ -170,7 +181,7 @@ export default function ProgramsScreen() {
         onEndReachedThreshold={0.5}
         ListFooterComponent={renderFooter}
         ListEmptyComponent={
-          <View className="items-center justify-center">
+          <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
             <Ionicons name="barbell-outline" size={48} color="#9CA3AF" />
             <Label variant="body" color="secondary" styleClass="mt-4">
               {loading ? "Loading..." : searchQuery ? "No programs found" : "No programs yet"}

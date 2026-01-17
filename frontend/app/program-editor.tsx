@@ -154,6 +154,24 @@ export default function ProgramEditorScreen() {
         onPrevious={handlePreviousWeek}
         onNext={handleNextWeek}
       />
+      <View className="flex-row mb-2 gap-2">
+        {workouts.length > 1 && (
+          <Button
+            title="Reorder workouts"
+            theme="tertiary"
+            onPress={() => setIsReorderModalVisible(true)}
+            styleClass="flex-1"
+          />
+        )}
+        {workouts.length > 1 && (
+        <Button
+          title="Copy week"
+          theme="tertiary"
+          onPress={() => copyWeek(workouts)}
+          styleClass="flex-1"
+        />
+        )}
+      </View>
 
       {/* Error message */}
       {error && (
@@ -179,7 +197,7 @@ export default function ProgramEditorScreen() {
         className="flex-1 px-4"
         contentContainerStyle={{ paddingBottom: 100 }}
       >
-        {isLoading && workouts.length === 0 ? (
+        {isLoading? (
           <View className="items-center justify-center py-12">
             <ActivityIndicator size="large" color="#3b82f6" />
           </View>
@@ -216,22 +234,6 @@ export default function ProgramEditorScreen() {
                 onCopy={() => copyWorkout(workout)}
               />
             ))}
-            <View className="flex-row mt-2 gap-2">
-              {workouts.length > 1 && (
-                <Button
-                  title="Reorder workouts"
-                  theme="tertiary"
-                  onPress={() => setIsReorderModalVisible(true)}
-                  styleClass="flex-1"
-                />
-              )}
-              <Button
-                title="Copy week"
-                theme="tertiary"
-                onPress={() => copyWeek(workouts)}
-                styleClass="flex-1"
-              />
-            </View>
           </View>
         )}
 

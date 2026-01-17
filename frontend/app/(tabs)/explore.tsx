@@ -1,4 +1,4 @@
-import { View, FlatList, RefreshControl, ActivityIndicator } from "react-native";
+import { View, FlatList, RefreshControl, ActivityIndicator, TextInput, Pressable } from "react-native";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { Label } from "@/components/Label";
@@ -102,17 +102,24 @@ export default function ExploreScreen() {
   return (
     <SafeAreaView className="flex-1 bg-white dark:bg-zinc-900">
       <View className="px-4 py-4">
-        <Label variant="heading" weight="bold" styleClass="mb-4">
-          Explore Programs
-        </Label>
-
         <View className="mb-2">
-          <Input
-            placeholder="Search by name or tag..."
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            returnKeyType="search"
-          />
+          <View className="flex-row items-center bg-gray-100 dark:bg-zinc-800 rounded-lg px-3 py-2">
+            <Ionicons name="search" size={20} color="#9CA3AF" />
+            <TextInput
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Search by name or tag..."
+              placeholderTextColor="#9CA3AF"
+              className="flex-1 ml-2 text-base text-gray-900 dark:text-white"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            {searchQuery.length > 0 && (
+              <Pressable onPress={() => setSearchQuery("")}>
+                <Ionicons name="close-circle" size={20} color="#9CA3AF" />
+              </Pressable>
+            )}
+          </View>
         </View>
 
         <Label variant="caption" color="secondary">

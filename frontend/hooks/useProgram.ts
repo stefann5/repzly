@@ -176,7 +176,6 @@ export function useProgram() {
 
   // Delete a workout
   const removeWorkout = async (programId: string, workoutNumber: number) => {
-    setIsLoading(true);
     setError(null);
     try {
       await programService.deleteWorkouts(programId, { workout_numbers: [workoutNumber] });

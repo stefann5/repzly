@@ -68,6 +68,9 @@ interface ProgramState {
 
   // Get all changed exercises as array
   getChangedExercisesArray: () => WorkoutExercise[];
+
+  // Clear all program state (used when finishing a program)
+  clearProgramState: () => void;
 }
 
 export const useProgramStore = create<ProgramState>((set, get) => ({
@@ -508,6 +511,20 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
       });
 
       return { workouts: reorderedWorkouts, changedExercises: newChanges };
+    });
+  },
+
+  clearProgramState: () => {
+    set({
+      currentProgram: null,
+      currentWeek: 1,
+      currentWorkoutNumber: null,
+      currentWorkoutOrder: null,
+      workouts: [],
+      changedExercises: new Map(),
+      copiedExercise: null,
+      copiedWorkout: null,
+      copiedWeek: null,
     });
   },
 }));

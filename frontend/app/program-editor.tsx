@@ -31,7 +31,7 @@ export default function ProgramEditorScreen() {
     removeWorkout,
   } = useProgram();
 
-  const { setCurrentWorkoutNumber, setCurrentWorkoutOrder, setCurrentProgram, copiedWorkout, copyWorkout, pasteWorkout, copiedWeek, copyWeek, pasteWeek, reorderWorkouts } = useProgramStore();
+  const { setCurrentWorkoutNumber, setCurrentWorkoutOrder, setCurrentProgram, copiedWorkout, copyWorkout, pasteWorkout, copiedWeek, copyWeek, pasteWeek, reorderWorkouts, clearProgramState } = useProgramStore();
   const { loadExercises, addToCache } = useExerciseStore();
   const [isPickerVisible, setIsPickerVisible] = useState(false);
   const [isReorderModalVisible, setIsReorderModalVisible] = useState(false);
@@ -91,6 +91,8 @@ export default function ProgramEditorScreen() {
         }
         await finishProgram(currentProgram.id);
         router.replace("/(tabs)/programs");
+        // Clear state after navigation to avoid null reference errors
+        setTimeout(() => clearProgramState(), 300);
       } catch (err) {
         console.error("Failed to finish program:", err);
       }
@@ -109,6 +111,8 @@ export default function ProgramEditorScreen() {
               try {
                 await finishProgram(currentProgram.id);
                 router.replace("/(tabs)/programs");
+                // Clear state after navigation to avoid null reference errors
+                setTimeout(() => clearProgramState(), 300);
               } catch (err) {
                 console.error("Failed to finish program:", err);
               }

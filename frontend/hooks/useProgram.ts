@@ -82,9 +82,14 @@ export function useProgram() {
     }
   };
 
-  // Finish program (set created: true)
+  // Finish program (set created: true) - doesn't use shared isLoading to avoid UI flicker
   const finishProgram = async (programId: string) => {
-    return updateProgram(programId, { created: true });
+    try {
+      await programService.update(programId, { created: true });
+    } catch (err: any) {
+      setError(err.message || "Failed to finish program");
+      throw err;
+    }
   };
 
   // Load a program for editing

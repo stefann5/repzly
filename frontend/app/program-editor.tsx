@@ -209,11 +209,11 @@ export default function ProgramEditorScreen() {
         contentContainerStyle={{ padding: 16, paddingTop: 16 }}
         ListEmptyComponent={
           isLoading ? (
-            <View className="items-center justify-center py-12">
+            <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding:50 }}>
               <ActivityIndicator size="large" color="#3b82f6" />
             </View>
           ) : (
-            <View className="items-center justify-center py-12">
+            <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
               <Ionicons name="fitness-outline" size={48} color="#9CA3AF" />
               <Label variant="body" color="secondary" styleClass="mt-4">
                 No workouts in this week

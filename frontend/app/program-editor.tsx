@@ -83,15 +83,45 @@ export default function ProgramEditorScreen() {
     }
   };
 
-  const handleFinish = async () => {
-    try {
-      if (hasChanges) {
-        await saveChanges(currentProgram.id);
+  const handleFinish = () => {
+    const finish = async () => {
+      try {
+        if (hasChanges) {
+          await saveChanges(currentProgram.id);
+        }
+        await finishProgram(currentProgram.id);
+        router.replace("/(tabs)/programs");
+      } catch (err) {
+        console.error("Failed to finish program:", err);
       }
-      await finishProgram(currentProgram.id);
-      router.replace("/(tabs)/programs");
-    } catch (err) {
-      console.error("Failed to finish program:", err);
+    };
+
+    if (hasChanges) {
+      Alert.alert(
+        "Unsaved Changes",
+        "You have unsaved changes. Do you want to save them before finishing?",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Discard",
+            style: "destructive",
+            onPress: async () => {
+              try {
+                await finishProgram(currentProgram.id);
+                router.replace("/(tabs)/programs");
+              } catch (err) {
+                console.error("Failed to finish program:", err);
+              }
+            },
+          },
+          {
+            text: "Save & Finish",
+            onPress: finish,
+          },
+        ]
+      );
+    } else {
+      finish();
     }
   };
 

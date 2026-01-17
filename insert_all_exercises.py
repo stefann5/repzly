@@ -1,7 +1,7 @@
 import re
 from pymongo import MongoClient
 
-MONGODB_URI = "mongodb+srv://stefannik04_db_user:a9hK1u1tWRqUpBfa@repzly.faivxth.mongodb.net/?appName=repzly"
+MONGODB_URI = ""
 DATABASE_NAME = "workout_db"
 COLLECTION_NAME = "exercises"
 

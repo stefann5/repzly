@@ -1,4 +1,4 @@
-import { View, FlatList, ActivityIndicator } from "react-native";
+import { View, FlatList, ActivityIndicator, Alert } from "react-native";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -111,12 +111,25 @@ export default function WorkoutEditorScreen() {
     setChangingExerciseId(null);
   };
 
-  const handleDeleteExercise = async (exerciseId: string) => {
-    try {
-      await removeExercise(currentProgram.id, exerciseId);
-    } catch (err) {
-      console.error("Failed to delete exercise:", err);
-    }
+  const handleDeleteExercise = (exerciseId: string) => {
+    Alert.alert(
+      "Delete Exercise",
+      "Are you sure you want to delete this exercise? This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await removeExercise(currentProgram.id, exerciseId);
+            } catch (err) {
+              console.error("Failed to delete exercise:", err);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleOpenNotes = useCallback((exerciseId: string) => {
@@ -147,18 +160,33 @@ export default function WorkoutEditorScreen() {
         >
           Week {currentWeek} • Workout {currentWorkoutOrder}
         </Label>
-        <Button
-          title={isLoading ? "Saving..." : "Save"}
-          theme="primary"
-          onPress={handleSave}
-          disabled={isLoading || !hasChanges}
-        />
+        <View style={{ width: 50 }} />
       </View>
+      {currentWorkout && currentWorkout.exercises.length > 1 && (
+        <Button
+          title="Reorder exercises"
+          theme="tertiary"
+          onPress={() => setIsReorderModalVisible(true)}
+          styleClass="mt-2 mb-2"
+        />
+      )}
 
       {/* Error message */}
       {error && (
         <View className="px-4 py-2 mx-4 mt-2 bg-red-100 rounded-lg dark:bg-red-900">
           <Label color="error">{error}</Label>
+        </View>
+      )}
+
+      {/* Save button */}
+      {hasChanges && (
+        <View className="px-4 mb-2">
+          <Button
+            title={isLoading ? "Saving..." : "Save Changes"}
+            theme="secondary"
+            onPress={handleSave}
+            disabled={isLoading}
+          />
         </View>
       )}
 
@@ -197,14 +225,6 @@ export default function WorkoutEditorScreen() {
         }
         ListFooterComponent={
           <View>
-            {currentWorkout && currentWorkout.exercises.length > 1 && (
-              <Button
-                title="Reorder exercises"
-                theme="tertiary"
-                onPress={() => setIsReorderModalVisible(true)}
-                styleClass="mt-2"
-              />
-            )}
             <View className="flex-row mt-4 gap-2">
               <Button
                 title="Add Exercise"

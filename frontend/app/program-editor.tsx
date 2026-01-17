@@ -1,4 +1,4 @@
-import { View, FlatList, ActivityIndicator } from "react-native";
+import { View, FlatList, ActivityIndicator, Alert } from "react-native";
 import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -118,12 +118,25 @@ export default function ProgramEditorScreen() {
     router.push("/workout-editor");
   };
 
-  const handleDeleteWorkout = async (workoutNumber: number) => {
-    try {
-      await removeWorkout(currentProgram.id, workoutNumber);
-    } catch (err) {
-      console.error("Failed to delete workout:", err);
-    }
+  const handleDeleteWorkout = (workoutNumber: number) => {
+    Alert.alert(
+      "Delete Workout",
+      "Are you sure you want to delete this workout? This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await removeWorkout(currentProgram.id, workoutNumber);
+            } catch (err) {
+              console.error("Failed to delete workout:", err);
+            }
+          },
+        },
+      ]
+    );
   };
 
   return (

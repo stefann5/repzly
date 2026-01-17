@@ -1,44 +1,20 @@
-import { Text, View } from "react-native";
-import { Button } from "@/components/Button";
-import { useAuth } from "@/hooks/useAuth";
-import { SafeAreaView } from "@/components/SafeAreaView";
-import { Input } from "@/components/Input";
+import { View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { Label } from "@/components/Label";
-
+import { SafeAreaView } from "@/components/SafeAreaView";
 
 export default function IndexScreen() {
-    const { logout } = useAuth();
-
-    const onLogOut = () => {
-        logout();
-    };
-
-    return (
-        <SafeAreaView className="flex-1 bg-white dark:bg-zinc-900">
-
-            <View className="flex-row py-2">
-                <View className="items-center justify-center flex-none w-1/6">
-                    <Label>#</Label>
-                </View>
-                <View className="items-center justify-center flex-none w-5/12">
-                    <Label>Volume</Label>
-                </View>
-                <View className="items-center justify-center flex-none w-5/12">
-                    <Label>Intensity</Label>
-                </View>
-            </View>
-            <View className="flex-row">
-                <View className="items-center justify-center flex-none w-1/6">
-                    <Label>#</Label>
-                </View>
-                <View className="items-center justify-center flex-none w-5/12">
-                    <Input placeholder="Search" styleClass="px-2 py-2"/>
-                </View>
-                <View className="items-center justify-center flex-none w-5/12">
-                    <Input placeholder="Search" styleClass="px-2 py-2"/>
-                </View>
-            </View>
-        </SafeAreaView>
-
-    );
+  return (
+    <SafeAreaView className="flex-1 bg-white dark:bg-zinc-900" edges={["top"]}>
+      <View className="items-center justify-center flex-1 px-8">
+        <Ionicons name="construct-outline" size={64} color="#9CA3AF" />
+        <Label variant="heading" weight="bold" styleClass="mt-6 text-center">
+          Coming Soon
+        </Label>
+        <Label variant="body" color="secondary" styleClass="mt-2 text-center">
+          We're working on something exciting. Stay tuned!
+        </Label>
+      </View>
+    </SafeAreaView>
+  );
 }

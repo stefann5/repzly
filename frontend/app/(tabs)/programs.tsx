@@ -1,4 +1,4 @@
-import { View, FlatList, RefreshControl, ActivityIndicator, TextInput, Pressable } from "react-native";
+import { View, FlatList, RefreshControl, ActivityIndicator, TextInput, Pressable, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Label } from "@/components/Label";
@@ -39,6 +39,21 @@ export default function ProgramsScreen() {
     setCurrentWeek(1);
     setCurrentWorkoutNumber(null);
     router.push("/create-program");
+  };
+
+  const handleDeleteProgram = (programId: string, programName: string) => {
+    Alert.alert(
+      "Delete Program",
+      `Are you sure you want to delete "${programName}"? This action cannot be undone.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => deleteProgram(programId),
+        },
+      ]
+    );
   };
 
   const renderFooter = () => {
@@ -94,7 +109,7 @@ export default function ProgramsScreen() {
           <ProgramCard
             program={item}
             onPress={() => handleProgramPress(item)}
-            onDelete={() => deleteProgram(item.id)}
+            onDelete={() => handleDeleteProgram(item.id, item.name)}
           />
         )}
         style={{ flex: 1 }}

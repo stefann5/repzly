@@ -74,6 +74,8 @@ export interface WorkoutExerciseInput {
   workout_number: number;
   order: number;
   exercise_id: string;
+  volume_metric?: string;
+  intensity_metric?: string;
   notes?: string;
   sets: Set[];
 }

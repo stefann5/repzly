@@ -247,6 +247,8 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
         workout_number: newWorkoutNumber,
         order: index + 1,
         exercise_id: exId,
+        volume_metric: "reps",
+        intensity_metric: "rpe",
         sets: [{ id: `${id}-1`, number: 1 }],
       };
     });
@@ -273,6 +275,8 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
       workout_number: workoutNumber,
       order: 0,
       exercise_id: exerciseId,
+      volume_metric: "reps",
+      intensity_metric: "rpe",
       sets: [{ id: `${id}-1`, number: 1 }],
     };
 
@@ -307,6 +311,8 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
           workout_number: workoutNumber,
           order: startOrder + index,
           exercise_id: exId,
+          volume_metric: "reps",
+          intensity_metric: "rpe",
           sets: [{ id: `${id}-1`, number: 1 }],
         };
       });

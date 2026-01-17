@@ -160,6 +160,8 @@ export function useProgram() {
           workout_number: e.workout_number,
           order: e.order,
           exercise_id: e.exercise_id,
+          volume_metric: e.volume_metric,
+          intensity_metric: e.intensity_metric,
           notes: e.notes,
           sets: e.sets,
         })),

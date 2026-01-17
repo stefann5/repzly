@@ -136,14 +136,15 @@ export default function CreateProgramScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-white dark:bg-zinc-900">
-      <ScrollView className="flex-1 px-4" contentContainerStyle={{ paddingVertical: 20 }}>
-        <View className="flex-row items-center justify-between mb-6">
-          <Label variant="heading" weight="bold">
-            {isEditMode ? "Edit Program" : "Create Program"}
-          </Label>
-          <Button title="Cancel" theme="tertiary" onPress={handleCancel} />
-        </View>
+      <View className="flex-row items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-zinc-700">
+        <Button title="Cancel" theme="tertiary" onPress={handleCancel} />
+        <Label variant="subheading" weight="bold">
+          {isEditMode ? "Edit Program" : "Create Program"}
+        </Label>
+        <View style={{ width: 60 }} />
+      </View>
 
+      <ScrollView className="flex-1 px-4" contentContainerStyle={{ paddingVertical: 20 }}>
         {error && (
           <View className="p-3 mb-4 bg-red-100 rounded-lg dark:bg-red-900">
             <Label color="error">{error}</Label>

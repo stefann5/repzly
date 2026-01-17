@@ -1,4 +1,5 @@
 import { View, FlatList, RefreshControl, ActivityIndicator, TextInput, Pressable } from "react-native";
+import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Label } from "@/components/Label";
 import { SafeAreaView } from "@/components/SafeAreaView";
@@ -7,6 +8,7 @@ import { Program } from "@/types/program";
 import { useProgramSearch } from "@/hooks/useProgramSearch";
 
 export default function ExploreScreen() {
+  const router = useRouter();
   const {
     programs,
     searchQuery,
@@ -19,8 +21,7 @@ export default function ExploreScreen() {
   } = useProgramSearch("public");
 
   const handleProgramPress = (program: Program) => {
-    // TODO: Navigate to program detail view
-    console.log("View program:", program.id);
+    router.push(`/view-program?programId=${program.id}` as any);
   };
 
   const renderFooter = () => {

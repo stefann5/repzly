@@ -1,5 +1,5 @@
-import { View, ScrollView, ActivityIndicator } from "react-native";
-import { useEffect, useState } from "react";
+import { View, FlatList, ActivityIndicator } from "react-native";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Label } from "@/components/Label";
@@ -8,6 +8,7 @@ import { SafeAreaView } from "@/components/SafeAreaView";
 import { ExerciseItem } from "@/components/ExerciseItem";
 import { ExercisePickerModal } from "@/components/ExercisePickerModal";
 import { ReorderExercisesModal } from "@/components/ReorderExercisesModal";
+import { NotesModal } from "@/components/NotesModal";
 import { useProgram } from "@/hooks/useProgram";
 import { useProgramStore } from "@/utils/programStore";
 import { useExerciseStore } from "@/utils/exerciseStore";
@@ -32,10 +33,11 @@ export default function WorkoutEditorScreen() {
   } = useProgram();
 
   const { currentWorkoutNumber, currentWorkoutOrder, copiedExercise, copyExercise, pasteExercise, reorderExercises } = useProgramStore();
-  const { loadExercises, addToCache } = useExerciseStore();
+  const { loadExercises, addToCache, getExerciseName } = useExerciseStore();
   const [isPickerVisible, setIsPickerVisible] = useState(false);
   const [changingExerciseId, setChangingExerciseId] = useState<string | null>(null);
   const [isReorderModalVisible, setIsReorderModalVisible] = useState(false);
+  const [notesExerciseId, setNotesExerciseId] = useState<string | null>(null);
 
   // Load exercise cache on mount
   useEffect(() => {
@@ -117,6 +119,21 @@ export default function WorkoutEditorScreen() {
     }
   };
 
+  const handleOpenNotes = useCallback((exerciseId: string) => {
+    setNotesExerciseId(exerciseId);
+  }, []);
+
+  const handleSaveNotes = useCallback((notes: string) => {
+    if (notesExerciseId) {
+      updateExercise(notesExerciseId, { notes });
+    }
+  }, [notesExerciseId, updateExercise]);
+
+  // Get current exercise for notes modal
+  const notesExercise = notesExerciseId
+    ? currentWorkout?.exercises.find((e) => e.id === notesExerciseId)
+    : null;
+
   return (
     <SafeAreaView className="flex-1 bg-white dark:bg-zinc-900">
       {/* Header */}
@@ -146,11 +163,28 @@ export default function WorkoutEditorScreen() {
       )}
 
       {/* Exercises list */}
-      <ScrollView
-        className="flex-1 px-4"
-        contentContainerStyle={{ paddingVertical: 16, paddingBottom: 100 }}
-      >
-        {!currentWorkout || currentWorkout.exercises.length === 0 ? (
+      <FlatList
+        data={currentWorkout?.exercises.filter((exercise) => exercise != null) ?? []}
+        keyExtractor={(item, index) => item.id || `exercise-${currentWorkoutNumber}-${index}`}
+        renderItem={({ item }) => (
+          <ExerciseItem
+            exercise={item}
+            onUpdateExercise={updateExercise}
+            onUpdateSet={updateSet}
+            onAddSet={addSet}
+            onDeleteSet={deleteSet}
+            onDeleteExercise={handleDeleteExercise}
+            onChangeExercise={handleChangeExercise}
+            onCopyExercise={copyExercise}
+            onOpenNotes={handleOpenNotes}
+          />
+        )}
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={5}
+        initialNumToRender={5}
+        windowSize={5}
+        contentContainerStyle={{ padding: 16, paddingTop: 16 }}
+        ListEmptyComponent={
           <View className="items-center justify-center py-12">
             <Ionicons name="barbell-outline" size={48} color="#9CA3AF" />
             <Label variant="body" color="secondary" styleClass="mt-4">
@@ -160,24 +194,10 @@ export default function WorkoutEditorScreen() {
               Add an exercise to get started
             </Label>
           </View>
-        ) : (
+        }
+        ListFooterComponent={
           <View>
-            {currentWorkout.exercises
-              .filter((exercise) => exercise != null)
-              .map((exercise, index) => (
-                <ExerciseItem
-                  key={exercise.id || `exercise-${currentWorkoutNumber}-${index}`}
-                  exercise={exercise}
-                  onUpdateExercise={updateExercise}
-                  onUpdateSet={updateSet}
-                  onAddSet={addSet}
-                  onDeleteSet={deleteSet}
-                  onDeleteExercise={handleDeleteExercise}
-                  onChangeExercise={handleChangeExercise}
-                  onCopyExercise={copyExercise}
-                />
-              ))}
-            {currentWorkout.exercises.length > 1 && (
+            {currentWorkout && currentWorkout.exercises.length > 1 && (
               <Button
                 title="Reorder exercises"
                 theme="tertiary"
@@ -185,27 +205,25 @@ export default function WorkoutEditorScreen() {
                 styleClass="mt-2"
               />
             )}
+            <View className="flex-row mt-4 gap-2">
+              <Button
+                title="Add Exercise"
+                theme="primary"
+                onPress={handleAddExercise}
+                styleClass="flex-1"
+              />
+              {copiedExercise && currentWorkoutNumber && (
+                <Button
+                  title="Paste exercise"
+                  theme="secondary"
+                  onPress={() => pasteExercise(currentWorkoutNumber, currentWeek)}
+                  styleClass="flex-1"
+                />
+              )}
+            </View>
           </View>
-        )}
-
-        {/* Add exercise button */}
-        <View className="flex-row mt-4 gap-2">
-          <Button
-            title="Add Exercise"
-            theme="primary"
-            onPress={handleAddExercise}
-            styleClass="flex-1"
-          />
-          {copiedExercise && currentWorkoutNumber && (
-            <Button
-              title="Paste exercise"
-              theme="secondary"
-              onPress={() => pasteExercise(currentWorkoutNumber, currentWeek)}
-              styleClass="flex-1"
-            />
-          )}
-        </View>
-      </ScrollView>
+        }
+      />
 
       {/* Exercise picker modal */}
       <ExercisePickerModal
@@ -227,6 +245,15 @@ export default function WorkoutEditorScreen() {
           onSave={(exerciseIds) => reorderExercises(currentWorkoutNumber, exerciseIds)}
         />
       )}
+
+      {/* Notes modal */}
+      <NotesModal
+        visible={notesExerciseId !== null}
+        initialNotes={notesExercise?.notes || ""}
+        exerciseName={notesExerciseId ? getExerciseName(notesExercise?.exercise_id || "") : ""}
+        onClose={() => setNotesExerciseId(null)}
+        onSave={handleSaveNotes}
+      />
     </SafeAreaView>
   );
 }

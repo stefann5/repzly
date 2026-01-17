@@ -1,4 +1,4 @@
-import { View, ScrollView, ActivityIndicator } from "react-native";
+import { View, FlatList, ActivityIndicator } from "react-native";
 import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -193,71 +193,70 @@ export default function ProgramEditorScreen() {
       )}
 
       {/* Workouts list */}
-      <ScrollView
+      <FlatList
         className="flex-1 px-4"
-        contentContainerStyle={{ paddingBottom: 100 }}
-      >
-        {isLoading? (
-          <View className="items-center justify-center py-12">
-            <ActivityIndicator size="large" color="#3b82f6" />
-          </View>
-        ) : workouts.length === 0 ? (
-          <View className="items-center justify-center py-12">
-            <Ionicons name="fitness-outline" size={48} color="#9CA3AF" />
-            <Label variant="body" color="secondary" styleClass="mt-4">
-              No workouts in this week
-            </Label>
-            <Label variant="caption" color="tertiary" styleClass="mt-1">
-              Add a workout to get started
-            </Label>
-            {copiedWeek && copiedWeek.length > 0 && (
+        data={workouts}
+        keyExtractor={(item) => `workout-${item.workout_number}`}
+        renderItem={({ item, index }) => (
+          <WorkoutOverviewCard
+            workout={item}
+            order={index + 1}
+            onPress={() => handleWorkoutPress(item.workout_number, index + 1)}
+            onDelete={() => handleDeleteWorkout(item.workout_number)}
+            onCopy={() => copyWorkout(item)}
+          />
+        )}
+        contentContainerStyle={{ padding: 16, paddingTop: 16 }}
+        ListEmptyComponent={
+          isLoading ? (
+            <View className="items-center justify-center py-12">
+              <ActivityIndicator size="large" color="#3b82f6" />
+            </View>
+          ) : (
+            <View className="items-center justify-center py-12">
+              <Ionicons name="fitness-outline" size={48} color="#9CA3AF" />
+              <Label variant="body" color="secondary" styleClass="mt-4">
+                No workouts in this week
+              </Label>
+              <Label variant="caption" color="tertiary" styleClass="mt-1">
+                Add a workout to get started
+              </Label>
+              {copiedWeek && copiedWeek.length > 0 && (
+                <Button
+                  title="Paste week"
+                  theme="secondary"
+                  onPress={() => {
+                    const newLastWorkoutNumber = pasteWeek(currentWeek, currentProgram.last_workout_number);
+                    setCurrentProgram({ ...currentProgram, last_workout_number: newLastWorkoutNumber });
+                  }}
+                  styleClass="mt-4"
+                />
+              )}
+            </View>
+          )
+        }
+        ListFooterComponent={
+          <View className="flex-row mt-4 gap-2">
+            <Button
+              title="Add Workout"
+              theme="primary"
+              onPress={handleAddWorkout}
+              styleClass="flex-1"
+            />
+            {copiedWorkout && (
               <Button
-                title="Paste week"
+                title="Paste workout"
                 theme="secondary"
                 onPress={() => {
-                  const newLastWorkoutNumber = pasteWeek(currentWeek, currentProgram.last_workout_number);
-                  setCurrentProgram({ ...currentProgram, last_workout_number: newLastWorkoutNumber });
+                  const newWorkoutNumber = pasteWorkout(currentWeek, currentProgram.last_workout_number);
+                  setCurrentProgram({ ...currentProgram, last_workout_number: newWorkoutNumber });
                 }}
-                styleClass="mt-4"
+                styleClass="flex-1"
               />
             )}
           </View>
-        ) : (
-          <View>
-            {workouts.map((workout, index) => (
-              <WorkoutOverviewCard
-                key={`workout-${workout.workout_number}`}
-                workout={workout}
-                order={index + 1}
-                onPress={() => handleWorkoutPress(workout.workout_number, index + 1)}
-                onDelete={() => handleDeleteWorkout(workout.workout_number)}
-                onCopy={() => copyWorkout(workout)}
-              />
-            ))}
-          </View>
-        )}
-
-        {/* Add workout button */}
-        <View className="flex-row mt-4 gap-2">
-          <Button
-            title="Add Workout"
-            theme="primary"
-            onPress={handleAddWorkout}
-            styleClass="flex-1"
-          />
-          {copiedWorkout && (
-            <Button
-              title="Paste workout"
-              theme="secondary"
-              onPress={() => {
-                const newWorkoutNumber = pasteWorkout(currentWeek, currentProgram.last_workout_number);
-                setCurrentProgram({ ...currentProgram, last_workout_number: newWorkoutNumber });
-              }}
-              styleClass="flex-1"
-            />
-          )}
-        </View>
-      </ScrollView>
+        }
+      />
 
       {/* Exercise picker modal for new workout */}
       <ExercisePickerModal

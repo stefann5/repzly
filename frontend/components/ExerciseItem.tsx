@@ -1,11 +1,10 @@
-import { useState } from "react";
+import { memo } from "react";
 import { View, Pressable, useColorScheme } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
 import { Label } from "./Label";
 import { SetRow } from "./SetRow";
 import { Button } from "./Button";
-import { NotesModal } from "./NotesModal";
 import { WorkoutExercise, Set } from "@/types/program";
 import { cn } from "@/utils/utils";
 import { useExerciseStore } from "@/utils/exerciseStore";
@@ -31,10 +30,11 @@ type ExerciseItemProps = {
   onDeleteExercise: (exerciseId: string) => void;
   onChangeExercise: (exerciseId: string) => void;
   onCopyExercise: (exercise: WorkoutExercise) => void;
+  onOpenNotes: (exerciseId: string) => void;
   styleClass?: string;
 };
 
-export function ExerciseItem({
+function ExerciseItemComponent({
   exercise,
   onUpdateExercise,
   onUpdateSet,
@@ -43,12 +43,12 @@ export function ExerciseItem({
   onDeleteExercise,
   onChangeExercise,
   onCopyExercise,
+  onOpenNotes,
   styleClass,
 }: ExerciseItemProps) {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const { getExerciseName } = useExerciseStore();
-  const [isNotesModalVisible, setIsNotesModalVisible] = useState(false);
 
   const exerciseName = getExerciseName(exercise.exercise_id);
   const hasNotes = exercise.notes && exercise.notes.trim().length > 0;
@@ -92,7 +92,7 @@ export function ExerciseItem({
             />
           </Pressable>
           <Pressable
-            onPress={() => setIsNotesModalVisible(true)}
+            onPress={() => onOpenNotes(exercise.id)}
             className="p-1 ml-2"
           >
             <Ionicons
@@ -191,15 +191,8 @@ export function ExerciseItem({
           styleClass="mt-2"
         />
       </View>
-
-      {/* Notes Modal */}
-      <NotesModal
-        visible={isNotesModalVisible}
-        initialNotes={exercise.notes || ""}
-        exerciseName={exerciseName}
-        onClose={() => setIsNotesModalVisible(false)}
-        onSave={(notes) => onUpdateExercise(exercise.id, { notes })}
-      />
     </View>
   );
 }
+
+export const ExerciseItem = memo(ExerciseItemComponent);

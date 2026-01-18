@@ -1,7 +1,10 @@
 import { useState } from "react";
-import { useProgramStore, generateId } from "@/utils/programStore";
+import { useProgramStore } from "@/utils/programStore";
 import { programService } from "@/services/program";
 import { CreateProgramRequest, UpdateProgramRequest } from "@/types/program";
+import * as Crypto from 'expo-crypto';
+
+
 
 export function useProgram() {
   const [isLoading, setIsLoading] = useState(false);
@@ -50,7 +53,7 @@ export function useProgram() {
     try {
       const program = await programService.create({
         ...data,
-        id: generateId(),
+        id: Crypto.randomUUID(),
         created: false,
       });
       setCurrentProgram(program);

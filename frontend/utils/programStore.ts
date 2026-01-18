@@ -1,14 +1,7 @@
 import { create } from "zustand";
 import { Program, WorkoutExercise, WorkoutGroup, Set } from "@/types/program";
+import * as Crypto from 'expo-crypto';
 
-// Generate UUID
-export const generateId = (): string => {
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    const v = c === "x" ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
-};
 
 interface ProgramState {
   // Current program being edited
@@ -110,7 +103,7 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
     const copied = get().copiedExercise;
     if (!copied) return;
 
-    const newId = generateId();
+    const newId = Crypto.randomUUID();
     const programId = get().currentProgram?.id || "";
 
     set((state) => {
@@ -156,7 +149,7 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
     const programId = get().currentProgram?.id || "";
 
     const newExercises: WorkoutExercise[] = copied.exercises.map((ex, index) => {
-      const newId = generateId();
+      const newId = Crypto.randomUUID();
       return {
         ...ex,
         id: newId,
@@ -204,7 +197,7 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
       const newWorkoutNumber = currentWorkoutNumber;
 
       const newExercises: WorkoutExercise[] = copiedWorkout.exercises.map((ex, index) => {
-        const newId = generateId();
+        const newId = Crypto.randomUUID();
         return {
           ...ex,
           id: newId,
@@ -239,7 +232,7 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
     const programId = get().currentProgram?.id || "";
 
     const newExercises: WorkoutExercise[] = exerciseIds.map((exId, index) => {
-      const id = generateId();
+      const id = Crypto.randomUUID();
       return {
         id,
         program_id: programId,
@@ -267,7 +260,7 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
   },
 
   addExercise: (workoutNumber, week, exerciseId) => {
-    const id = generateId();
+    const id = Crypto.randomUUID();
     const newExercise: WorkoutExercise = {
       id,
       program_id: get().currentProgram?.id || "",
@@ -303,7 +296,7 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
       const startOrder = workout ? workout.exercises.length + 1 : 1;
 
       const newExercises: WorkoutExercise[] = exerciseIds.map((exId, index) => {
-        const id = generateId();
+        const id = Crypto.randomUUID();
         return {
           id,
           program_id: programId,

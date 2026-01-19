@@ -1,3 +1,9 @@
+// ID mapping for temp ID -> real MongoDB ObjectId conversion
+export interface IdMapping {
+  temp_id: string;
+  real_id: string;
+}
+
 // Program types
 export interface Program {
   id: string;
@@ -13,13 +19,17 @@ export interface Program {
 }
 
 export interface CreateProgramRequest {
-  id: string;
+  id: string; // temp ID from client (will be replaced with MongoDB ObjectId)
   name: string;
   description?: string;
   tags?: string[];
   total_weeks?: number;
   public?: boolean;
   created?: boolean;
+}
+
+export interface CreateProgramResponse extends Program {
+  id_mapping?: IdMapping;
 }
 
 export interface UpdateProgramRequest {
@@ -82,6 +92,10 @@ export interface WorkoutExerciseInput {
 
 export interface UpsertExercisesRequest {
   exercises: WorkoutExerciseInput[];
+}
+
+export interface UpsertExercisesResponse {
+  id_mappings: IdMapping[];
 }
 
 export interface DeleteWorkoutsRequest {

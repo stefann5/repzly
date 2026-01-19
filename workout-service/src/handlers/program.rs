@@ -7,8 +7,8 @@ use axum_jwt_auth::Claims;
 
 use crate::error::AppError;
 use crate::models::{
-    Claims as MyClaims, CreateProgramRequest, PaginatedProgramResponse, ProgramResponse,
-    ProgramSearchParams, UpdateProgramRequest,
+    Claims as MyClaims, CreateProgramRequest, CreateProgramResponse, PaginatedProgramResponse,
+    ProgramResponse, ProgramSearchParams, UpdateProgramRequest,
 };
 use crate::services;
 use crate::state::AppState;
@@ -16,13 +16,14 @@ use crate::state::AppState;
 const MAX_IMAGE_SIZE: usize = 5 * 1024 * 1024; // 5MB
 
 /// POST /programs - Create a new program
+/// Returns the created program along with ID mapping if a temp ID was replaced
 pub async fn create_program(
     State(state): State<AppState>,
     user: Claims<MyClaims>,
     Json(payload): Json<CreateProgramRequest>,
-) -> Result<(StatusCode, Json<ProgramResponse>), AppError> {
-    let program = services::create_program(&state.collections, &user.claims.sub, payload).await?;
-    Ok((StatusCode::CREATED, Json(program)))
+) -> Result<(StatusCode, Json<CreateProgramResponse>), AppError> {
+    let response = services::create_program(&state.collections, &user.claims.sub, payload).await?;
+    Ok((StatusCode::CREATED, Json(response)))
 }
 
 /// GET /programs - List user's programs

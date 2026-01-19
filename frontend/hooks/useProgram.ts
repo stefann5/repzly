@@ -2,7 +2,13 @@ import { useState } from "react";
 import { useProgramStore } from "@/utils/programStore";
 import { programService } from "@/services/program";
 import { CreateProgramRequest, UpdateProgramRequest } from "@/types/program";
-import * as Crypto from 'expo-crypto';
+
+// Generate a temporary ID that will be replaced by a real MongoDB ObjectId on save
+const generateTempId = (): string => {
+  const timestamp = Date.now().toString(16);
+  const random = Math.random().toString(16).substring(2, 10);
+  return `temp-${timestamp}-${random}`;
+};
 
 
 
@@ -30,6 +36,7 @@ export function useProgram() {
     deleteSet,
     getChangedExercisesArray,
     clearChanges,
+    applyIdMappings,
   } = useProgramStore();
 
   // Fetch all programs
@@ -51,16 +58,18 @@ export function useProgram() {
     setIsLoading(true);
     setError(null);
     try {
-      const program = await programService.create({
+      const response = await programService.create({
         ...data,
-        id: Crypto.randomUUID(),
+        id: generateTempId(),
         created: false,
       });
-      setCurrentProgram(program);
+      // The response contains the program with the real ID (id_mapping shows the conversion)
+      // We use the program directly since the ID has already been converted on the backend
+      setCurrentProgram(response);
       setCurrentWeek(1);
       setWorkouts([]);
       clearChanges();
-      return program;
+      return response;
     } catch (err: any) {
       setError(err.message || "Failed to create program");
       throw err;
@@ -156,7 +165,7 @@ export function useProgram() {
         currentProgram?.last_workout_number || 0
       );
 
-      await programService.upsertExercises(programId, {
+      const response = await programService.upsertExercises(programId, {
         exercises: changedExercises.map((e) => ({
           id: e.id,
           week: e.week,
@@ -169,6 +178,11 @@ export function useProgram() {
           sets: e.sets,
         })),
       });
+
+      // Apply ID mappings to replace temp IDs with real MongoDB ObjectIds
+      if (response.id_mappings.length > 0) {
+        applyIdMappings(response.id_mappings);
+      }
 
       // Update local program with new last_workout_number
       if (currentProgram && maxWorkoutNumber > currentProgram.last_workout_number) {
@@ -186,6 +200,16 @@ export function useProgram() {
 
   // Delete a workout
   const removeWorkout = async (programId: string, workoutNumber: number) => {
+    // Check if all exercises in this workout have temp IDs (never saved to backend)
+    const workout = workouts.find((w) => w.workout_number === workoutNumber);
+    const allTempIds = workout?.exercises.every((e) => e.id.startsWith("temp-")) ?? true;
+
+    if (allTempIds) {
+      // Just delete locally - nothing was saved to backend
+      deleteWorkout(workoutNumber);
+      return;
+    }
+
     setError(null);
     try {
       await programService.deleteWorkouts(programId, { workout_numbers: [workoutNumber] });
@@ -200,6 +224,12 @@ export function useProgram() {
 
   // Delete an exercise
   const removeExercise = async (programId: string, exerciseId: string) => {
+    // If it's a temp ID, just remove locally (was never saved to backend)
+    if (exerciseId.startsWith("temp-")) {
+      deleteExercise(exerciseId);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     try {

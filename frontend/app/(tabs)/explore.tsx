@@ -79,14 +79,30 @@ export default function ExploreScreen() {
         onEndReachedThreshold={0.5}
         ListFooterComponent={renderFooter}
         ListEmptyComponent={
-          <View className="items-center justify-center py-12">
-            <Ionicons name="search-outline" size={48} color="#9CA3AF" />
-            <Label variant="body" color="secondary" styleClass="mt-4">
-              {loading ? "Loading..." : "No programs found"}
-            </Label>
+          <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+            {loading ?
+              (
+                <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 50 }}>
+                  <ActivityIndicator size="large" color="#3b82f6" />
+                </View>
+              ) :
+              (<View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+                <Ionicons name="barbell-outline" size={48} color="#9CA3AF" />
+
+                <Label variant="body" color="secondary" styleClass="mt-4">
+                  {searchQuery ? "No programs found" : "No programs yet"}
+                </Label>
+              </View>
+
+              )
+
+            }
+
             {!loading && (
               <Label variant="caption" color="tertiary" styleClass="mt-1">
-                Try different search terms
+                {searchQuery
+                  ? "Try different search terms"
+                  : "Create your first program to get started"}
               </Label>
             )}
           </View>

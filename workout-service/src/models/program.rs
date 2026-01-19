@@ -1,10 +1,14 @@
+use bson::oid::ObjectId;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
+use super::workout_exercise::IdMapping;
+
+/// Program model for MongoDB storage - uses native ObjectId
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Program {
     #[serde(rename = "_id")]
-    pub id: String,
+    pub id: ObjectId,
     pub user_id: String,
     pub name: String,
     pub description: Option<String>,
@@ -19,13 +23,22 @@ pub struct Program {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CreateProgramRequest {
-    pub id: String, // client-generated UUID
+    pub id: String, // temp ID from client (will be replaced with MongoDB ObjectId)
     pub name: String,
     pub description: Option<String>,
     pub tags: Option<Vec<String>>,
     pub total_weeks: Option<i32>,
     pub public: Option<bool>,
     pub created: Option<bool>,
+}
+
+/// Response for create program with ID mapping
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CreateProgramResponse {
+    #[serde(flatten)]
+    pub program: ProgramResponse,
+    /// ID mapping if a temp ID was replaced (None if ID was already valid)
+    pub id_mapping: Option<IdMapping>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -56,7 +69,7 @@ pub struct ProgramResponse {
 impl From<Program> for ProgramResponse {
     fn from(p: Program) -> Self {
         Self {
-            id: p.id,
+            id: p.id.to_hex(),
             name: p.name,
             description: p.description,
             image_url: p.image_url,

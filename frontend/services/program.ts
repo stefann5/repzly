@@ -2,9 +2,11 @@ import workoutApi from "@/utils/workoutApi";
 import {
   Program,
   CreateProgramRequest,
+  CreateProgramResponse,
   UpdateProgramRequest,
   WeekResponse,
   UpsertExercisesRequest,
+  UpsertExercisesResponse,
   DeleteWorkoutsRequest,
   DeleteExercisesRequest,
   ProgramSearchParams,
@@ -12,9 +14,9 @@ import {
 } from "@/types/program";
 
 export const programService = {
-  // Create a new program
-  create: async (data: CreateProgramRequest): Promise<Program> => {
-    const response = await workoutApi.post<Program>("/programs", data);
+  // Create a new program - returns program with ID mapping if temp ID was replaced
+  create: async (data: CreateProgramRequest): Promise<CreateProgramResponse> => {
+    const response = await workoutApi.post<CreateProgramResponse>("/programs", data);
     return response.data;
   },
 
@@ -49,9 +51,10 @@ export const programService = {
     return response.data;
   },
 
-  // Upsert workout exercises
-  upsertExercises: async (programId: string, data: UpsertExercisesRequest): Promise<void> => {
-    await workoutApi.put(`/programs/${programId}/workout-exercises`, data);
+  // Upsert workout exercises - returns ID mappings for temp IDs
+  upsertExercises: async (programId: string, data: UpsertExercisesRequest): Promise<UpsertExercisesResponse> => {
+    const response = await workoutApi.put<UpsertExercisesResponse>(`/programs/${programId}/workout-exercises`, data);
+    return response.data;
   },
 
   // Delete workouts by workout numbers

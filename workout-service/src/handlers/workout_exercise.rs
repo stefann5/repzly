@@ -9,7 +9,7 @@ use serde::Deserialize;
 use crate::error::AppError;
 use crate::models::{
     Claims as MyClaims, DeleteExercisesRequest, DeleteWorkoutsRequest, UpsertExercisesRequest,
-    WeekResponse,
+    UpsertExercisesResponse, WeekResponse,
 };
 use crate::services;
 use crate::state::AppState;
@@ -33,14 +33,17 @@ pub async fn get_week(
 }
 
 /// PUT /programs/:id/workout-exercises - Upsert exercises
+/// Returns ID mappings for any temporary IDs that were converted to real ObjectIds
 pub async fn upsert_exercises(
     State(state): State<AppState>,
     user: Claims<MyClaims>,
     Path(program_id): Path<String>,
     Json(payload): Json<UpsertExercisesRequest>,
-) -> Result<StatusCode, AppError> {
-    services::upsert_exercises(&state.collections, &user.claims.sub, &program_id, payload).await?;
-    Ok(StatusCode::NO_CONTENT)
+) -> Result<Json<UpsertExercisesResponse>, AppError> {
+    let response =
+        services::upsert_exercises(&state.collections, &user.claims.sub, &program_id, payload)
+            .await?;
+    Ok(Json(response))
 }
 
 /// DELETE /programs/:id/workouts - Delete workouts by workout_numbers

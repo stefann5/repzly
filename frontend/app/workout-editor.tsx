@@ -181,7 +181,7 @@ export default function WorkoutEditorScreen() {
 
       {/* Save button */}
       {hasChanges && (
-        <View className="px-4 mb-2">
+        <View className="px-4 mb-2 mt-1">
           <Button
             title={isLoading ? "Saving..." : "Save Changes"}
             theme="secondary"

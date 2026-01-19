@@ -1,6 +1,13 @@
 import { create } from "zustand";
-import { Program, WorkoutExercise, WorkoutGroup, Set } from "@/types/program";
-import * as Crypto from 'expo-crypto';
+import { Program, WorkoutExercise, WorkoutGroup, Set, IdMapping } from "@/types/program";
+
+// Generate a temporary ID that will be replaced by a real MongoDB ObjectId on save
+const generateTempId = (): string => {
+  // Use timestamp + random hex for uniqueness
+  const timestamp = Date.now().toString(16);
+  const random = Math.random().toString(16).substring(2, 10);
+  return `temp-${timestamp}-${random}`;
+};
 
 
 interface ProgramState {
@@ -62,6 +69,9 @@ interface ProgramState {
   // Get all changed exercises as array
   getChangedExercisesArray: () => WorkoutExercise[];
 
+  // Apply ID mappings from backend (replace temp IDs with real IDs)
+  applyIdMappings: (mappings: IdMapping[]) => void;
+
   // Clear all program state (used when finishing a program)
   clearProgramState: () => void;
 }
@@ -103,7 +113,7 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
     const copied = get().copiedExercise;
     if (!copied) return;
 
-    const newId = Crypto.randomUUID();
+    const newId = generateTempId();
     const programId = get().currentProgram?.id || "";
 
     set((state) => {
@@ -149,7 +159,7 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
     const programId = get().currentProgram?.id || "";
 
     const newExercises: WorkoutExercise[] = copied.exercises.map((ex, index) => {
-      const newId = Crypto.randomUUID();
+      const newId = generateTempId();
       return {
         ...ex,
         id: newId,
@@ -197,7 +207,7 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
       const newWorkoutNumber = currentWorkoutNumber;
 
       const newExercises: WorkoutExercise[] = copiedWorkout.exercises.map((ex, index) => {
-        const newId = Crypto.randomUUID();
+        const newId = generateTempId();
         return {
           ...ex,
           id: newId,
@@ -232,7 +242,7 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
     const programId = get().currentProgram?.id || "";
 
     const newExercises: WorkoutExercise[] = exerciseIds.map((exId, index) => {
-      const id = Crypto.randomUUID();
+      const id = generateTempId();
       return {
         id,
         program_id: programId,
@@ -260,7 +270,7 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
   },
 
   addExercise: (workoutNumber, week, exerciseId) => {
-    const id = Crypto.randomUUID();
+    const id = generateTempId();
     const newExercise: WorkoutExercise = {
       id,
       program_id: get().currentProgram?.id || "",
@@ -296,7 +306,7 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
       const startOrder = workout ? workout.exercises.length + 1 : 1;
 
       const newExercises: WorkoutExercise[] = exerciseIds.map((exId, index) => {
-        const id = Crypto.randomUUID();
+        const id = generateTempId();
         return {
           id,
           program_id: programId,
@@ -411,9 +421,16 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
   },
 
   deleteWorkout: (workoutNumber) => {
-    set((state) => ({
-      workouts: state.workouts.filter((w) => w.workout_number !== workoutNumber),
-    }));
+    set((state) => {
+      const workoutToDelete = state.workouts.find((w) => w.workout_number === workoutNumber);
+      // Remove exercises from changedExercises (especially important for temp IDs)
+      const newChanges = new Map(state.changedExercises);
+      workoutToDelete?.exercises.forEach((e) => newChanges.delete(e.id));
+      return {
+        workouts: state.workouts.filter((w) => w.workout_number !== workoutNumber),
+        changedExercises: newChanges,
+      };
+    });
   },
 
   deleteExercise: (exerciseId) => {
@@ -422,8 +439,14 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
         ...w,
         exercises: w.exercises.filter((e) => e.id !== exerciseId),
       }));
+      // Remove from changedExercises (especially important for temp IDs)
+      const newChanges = new Map(state.changedExercises);
+      newChanges.delete(exerciseId);
       // Remove empty workouts
-      return { workouts: newWorkouts.filter((w) => w.exercises.length > 0) };
+      return {
+        workouts: newWorkouts.filter((w) => w.exercises.length > 0),
+        changedExercises: newChanges,
+      };
     });
   },
 
@@ -510,6 +533,38 @@ export const useProgramStore = create<ProgramState>((set, get) => ({
       });
 
       return { workouts: reorderedWorkouts, changedExercises: newChanges };
+    });
+  },
+
+  applyIdMappings: (mappings) => {
+    if (mappings.length === 0) return;
+
+    // Create a lookup map for efficient ID replacement
+    const idMap = new Map<string, string>();
+    mappings.forEach((m) => idMap.set(m.temp_id, m.real_id));
+
+    set((state) => {
+      // Update workouts - replace temp IDs with real IDs
+      const newWorkouts = state.workouts.map((w) => ({
+        ...w,
+        exercises: w.exercises.map((e) => {
+          const realId = idMap.get(e.id);
+          if (realId) {
+            // Update exercise ID and set IDs
+            return {
+              ...e,
+              id: realId,
+              sets: e.sets.map((s, idx) => ({
+                ...s,
+                id: `${realId}-${idx + 1}`,
+              })),
+            };
+          }
+          return e;
+        }),
+      }));
+
+      return { workouts: newWorkouts };
     });
   },
 

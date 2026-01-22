@@ -1,11 +1,7 @@
-use std::sync::Arc;
-
 use axum::{
     routing::{get, post},
     Router,
 };
-use axum_jwt_auth::LocalDecoder;
-use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use sqlx::postgres::PgPoolOptions;
 
 mod config;
@@ -82,17 +78,7 @@ async fn main() {
     .await
     .expect("Failed to create email_verification_tokens table");
 
-    let mut validation = Validation::new(Algorithm::HS256);
-    validation.set_audience(&["my-app"]);
-
-    let decoder = LocalDecoder::builder()
-        .keys(vec![DecodingKey::from_secret(jwt_secret.as_bytes())])
-        .validation(validation)
-        .build()
-        .unwrap();
-
     let state = AppState {
-        decoder: Arc::new(decoder),
         jwt_secret,
         db,
         smtp_config,
@@ -109,10 +95,10 @@ async fn main() {
         .route("/protected", get(protected))
         .with_state(state);
 
-    let listener = tokio::net::TcpListener::bind("192.168.1.9:3000")
+    let listener = tokio::net::TcpListener::bind("192.168.1.9:3002")
         .await
         .unwrap();
 
-    println!("Server running on http://192.168.1.9:3000");
+    println!("Backend service running on http://192.168.1.9:3002");
     axum::serve(listener, app).await.unwrap();
 }

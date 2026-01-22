@@ -1,13 +1,12 @@
 use axum::{
     extract::{Multipart, Path, Query, State},
-    http::StatusCode,
+    http::{HeaderMap, StatusCode},
     Json,
 };
-use axum_jwt_auth::Claims;
 
 use crate::error::AppError;
 use crate::models::{
-    Claims as MyClaims, CreateProgramRequest, CreateProgramResponse, PaginatedProgramResponse,
+    CreateProgramRequest, CreateProgramResponse, PaginatedProgramResponse,
     ProgramResponse, ProgramSearchParams, UpdateProgramRequest,
 };
 use crate::services;
@@ -15,46 +14,58 @@ use crate::state::AppState;
 
 const MAX_IMAGE_SIZE: usize = 5 * 1024 * 1024; // 5MB
 
+fn extract_user_id(headers: &HeaderMap) -> Result<String, AppError> {
+    headers
+        .get("X-User-Id")
+        .and_then(|v| v.to_str().ok())
+        .map(|s| s.to_string())
+        .ok_or_else(|| AppError::Unauthorized("Missing X-User-Id header".to_string()))
+}
+
 /// POST /programs - Create a new program
 /// Returns the created program along with ID mapping if a temp ID was replaced
 pub async fn create_program(
     State(state): State<AppState>,
-    user: Claims<MyClaims>,
+    headers: HeaderMap,
     Json(payload): Json<CreateProgramRequest>,
 ) -> Result<(StatusCode, Json<CreateProgramResponse>), AppError> {
-    let response = services::create_program(&state.collections, &user.claims.sub, payload).await?;
+    let user_id = extract_user_id(&headers)?;
+    let response = services::create_program(&state.collections, &user_id, payload).await?;
     Ok((StatusCode::CREATED, Json(response)))
 }
 
 /// GET /programs - List user's programs
 pub async fn get_programs(
     State(state): State<AppState>,
-    user: Claims<MyClaims>,
+    headers: HeaderMap,
 ) -> Result<Json<Vec<ProgramResponse>>, AppError> {
-    let programs = services::get_user_programs(&state.collections, &user.claims.sub).await?;
+    let user_id = extract_user_id(&headers)?;
+    let programs = services::get_user_programs(&state.collections, &user_id).await?;
     Ok(Json(programs))
 }
 
 /// GET /programs/:id - Get a specific program
 pub async fn get_program(
     State(state): State<AppState>,
-    user: Claims<MyClaims>,
+    headers: HeaderMap,
     Path(program_id): Path<String>,
 ) -> Result<Json<ProgramResponse>, AppError> {
+    let user_id = extract_user_id(&headers)?;
     let program =
-        services::get_program(&state.collections, &user.claims.sub, &program_id).await?;
+        services::get_program(&state.collections, &user_id, &program_id).await?;
     Ok(Json(program))
 }
 
 /// PATCH /programs/:id - Update program info
 pub async fn update_program(
     State(state): State<AppState>,
-    user: Claims<MyClaims>,
+    headers: HeaderMap,
     Path(program_id): Path<String>,
     Json(payload): Json<UpdateProgramRequest>,
 ) -> Result<Json<ProgramResponse>, AppError> {
+    let user_id = extract_user_id(&headers)?;
     let program =
-        services::update_program(&state.collections, &user.claims.sub, &program_id, payload)
+        services::update_program(&state.collections, &user_id, &program_id, payload)
             .await?;
     Ok(Json(program))
 }
@@ -62,11 +73,12 @@ pub async fn update_program(
 /// DELETE /programs/:id - Delete a program
 pub async fn delete_program(
     State(state): State<AppState>,
-    user: Claims<MyClaims>,
+    headers: HeaderMap,
     Path(program_id): Path<String>,
 ) -> Result<StatusCode, AppError> {
+    let user_id = extract_user_id(&headers)?;
     // Get the program first to check if it has an image to delete
-    let program = services::get_program(&state.collections, &user.claims.sub, &program_id).await?;
+    let program = services::get_program(&state.collections, &user_id, &program_id).await?;
 
     // Delete S3 image if exists
     if let Some(ref image_url) = program.image_url {
@@ -75,19 +87,20 @@ pub async fn delete_program(
         }
     }
 
-    services::delete_program(&state.collections, &user.claims.sub, &program_id).await?;
+    services::delete_program(&state.collections, &user_id, &program_id).await?;
     Ok(StatusCode::NO_CONTENT)
 }
 
 /// POST /programs/:id/image - Upload program image
 pub async fn upload_program_image(
     State(state): State<AppState>,
-    user: Claims<MyClaims>,
+    headers: HeaderMap,
     Path(program_id): Path<String>,
     mut multipart: Multipart,
 ) -> Result<Json<ProgramResponse>, AppError> {
+    let user_id = extract_user_id(&headers)?;
     // Verify program ownership
-    let program = services::get_program(&state.collections, &user.claims.sub, &program_id).await?;
+    let program = services::get_program(&state.collections, &user_id, &program_id).await?;
 
     // Extract image from multipart
     let mut file_data: Option<Vec<u8>> = None;
@@ -149,7 +162,7 @@ pub async fn upload_program_image(
     // Update program with new image URL
     let updated = services::update_program(
         &state.collections,
-        &user.claims.sub,
+        &user_id,
         &program_id,
         UpdateProgramRequest {
             name: None,
@@ -178,10 +191,11 @@ pub async fn search_public_programs(
 /// GET /programs/search/mine - Search user's own programs with pagination
 pub async fn search_user_programs(
     State(state): State<AppState>,
-    user: Claims<MyClaims>,
+    headers: HeaderMap,
     Query(params): Query<ProgramSearchParams>,
 ) -> Result<Json<PaginatedProgramResponse>, AppError> {
+    let user_id = extract_user_id(&headers)?;
     let result =
-        services::search_user_programs(&state.collections, &user.claims.sub, params).await?;
+        services::search_user_programs(&state.collections, &user_id, params).await?;
     Ok(Json(result))
 }

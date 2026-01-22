@@ -4,8 +4,9 @@ use futures::TryStreamExt;
 use crate::db::Collections;
 use crate::error::AppError;
 use crate::models::{
-    DeleteExercisesRequest, DeleteWorkoutsRequest, IdMapping, UpsertExercisesRequest,
-    UpsertExercisesResponse, WeekResponse, WorkoutExercise, WorkoutExerciseResponse, WorkoutGroup,
+    DeleteExercisesRequest, DeleteWorkoutsRequest, IdMapping, NextWorkoutResponse,
+    UpsertExercisesRequest, UpsertExercisesResponse, WeekResponse, WorkoutExercise,
+    WorkoutExerciseResponse, WorkoutGroup,
 };
 
 /// Check if an ID is a temporary ID (starts with "temp-")
@@ -231,4 +232,65 @@ pub async fn delete_exercises(
         .await?;
 
     Ok(())
+}
+
+/// Get the next workout after a given workout_number
+/// Returns None if there are no more workouts
+pub async fn get_next_workout(
+    collections: &Collections,
+    user_id: &str,
+    program_id: &str,
+    last_workout_number: i32,
+) -> Result<Option<NextWorkoutResponse>, AppError> {
+    let program_oid = ObjectId::parse_str(program_id)
+        .map_err(|e| AppError::BadRequest(format!("Invalid ObjectId: {}", e)))?;
+
+    // Verify program exists and user has access (owner or public program)
+    collections
+        .programs
+        .find_one(doc! {
+            "_id": program_oid,
+            "$or": [
+                { "user_id": user_id },
+                { "public": true, "created_at": { "$ne": null } }
+            ]
+        })
+        .await?
+        .ok_or_else(|| AppError::NotFound("Program not found".to_string()))?;
+
+    // Find the next workout (first workout with workout_number > last_workout_number)
+    let next_exercise = collections
+        .workout_exercises
+        .find_one(doc! {
+            "program_id": program_id,
+            "workout_number": { "$gt": last_workout_number }
+        })
+        .sort(doc! { "workout_number": 1 })
+        .await?;
+
+    match next_exercise {
+        Some(exercise) => {
+            let next_workout_number = exercise.workout_number;
+            let week = exercise.week;
+
+            // Get all exercises for this workout
+            let cursor = collections
+                .workout_exercises
+                .find(doc! {
+                    "program_id": program_id,
+                    "workout_number": next_workout_number
+                })
+                .sort(doc! { "order": 1 })
+                .await?;
+
+            let exercises: Vec<WorkoutExercise> = cursor.try_collect().await?;
+
+            Ok(Some(NextWorkoutResponse {
+                workout_number: next_workout_number,
+                week,
+                exercises: exercises.into_iter().map(|e| e.into()).collect(),
+            }))
+        }
+        None => Ok(None),
+    }
 }

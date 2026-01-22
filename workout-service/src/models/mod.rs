@@ -1,9 +1,7 @@
-pub mod claims;
 pub mod exercise;
 pub mod program;
 pub mod workout_exercise;
 
-pub use claims::Claims;
 pub use exercise::{
     CreateExerciseRequest, Exercise, ExerciseQueryParams, ExerciseResponse, MuscleIntensity,
     PaginatedExerciseResponse, UpdateExerciseRequest,
@@ -13,6 +11,7 @@ pub use program::{
     ProgramResponse, ProgramSearchParams, UpdateProgramRequest,
 };
 pub use workout_exercise::{
-    DeleteExercisesRequest, DeleteWorkoutsRequest, IdMapping, Set, UpsertExercisesRequest,
-    UpsertExercisesResponse, WeekResponse, WorkoutExercise, WorkoutExerciseResponse, WorkoutGroup,
+    DeleteExercisesRequest, DeleteWorkoutsRequest, IdMapping, NextWorkoutResponse, Set,
+    UpsertExercisesRequest, UpsertExercisesResponse, WeekResponse, WorkoutExercise,
+    WorkoutExerciseResponse, WorkoutGroup,
 };

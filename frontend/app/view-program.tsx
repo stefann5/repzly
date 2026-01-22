@@ -1,16 +1,19 @@
-import { View, ScrollView, ActivityIndicator } from "react-native";
-import { useEffect } from "react";
+import { View, ScrollView, ActivityIndicator, Alert } from "react-native";
+import { useEffect, useState } from "react";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Image } from "expo-image";
 import { Button } from "@/components/Button";
 import { Label } from "@/components/Label";
 import { SafeAreaView } from "@/components/SafeAreaView";
 import { useViewProgramStore } from "@/utils/viewProgramStore";
+import { useStartedProgramStore } from "@/utils/startedProgramStore";
 
 export default function ViewProgramScreen() {
   const router = useRouter();
   const { programId } = useLocalSearchParams<{ programId: string }>();
   const { viewedProgram, isLoading, error, loadProgram, clearViewState } = useViewProgramStore();
+  const { startProgram } = useStartedProgramStore();
+  const [isStarting, setIsStarting] = useState(false);
 
   useEffect(() => {
     if (programId) {
@@ -25,6 +28,27 @@ export default function ViewProgramScreen() {
 
   const handleViewWorkouts = () => {
     router.push("/view-program-editor");
+  };
+
+  const handleStartProgram = async () => {
+    if (!viewedProgram) return;
+
+    setIsStarting(true);
+    try {
+      await startProgram(viewedProgram.id);
+      Alert.alert(
+        "Program Started",
+        `You've started "${viewedProgram.name}". Go to Started Programs to begin your workout.`,
+        [
+          { text: "OK", onPress: () => router.back() },
+        ]
+      );
+    } catch (error: any) {
+      const message = error.response?.data?.error || "Failed to start program";
+      Alert.alert("Error", message);
+    } finally {
+      setIsStarting(false);
+    }
   };
 
   if (isLoading && !viewedProgram) {
@@ -122,7 +146,16 @@ export default function ViewProgramScreen() {
         <Button
           title="View Workouts"
           onPress={handleViewWorkouts}
+          theme="secondary"
           styleClass="w-full mt-4"
+        />
+
+        {/* Start Program Button */}
+        <Button
+          title={isStarting ? "Starting..." : "Start Program"}
+          onPress={handleStartProgram}
+          disabled={isStarting}
+          styleClass="w-full mt-2"
         />
       </ScrollView>
     </SafeAreaView>

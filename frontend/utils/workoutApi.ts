@@ -1,7 +1,7 @@
 import axios from "axios";
 import { storage, ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from "@/utils/storage";
 
-const WORKOUT_API_URL = "http://192.168.1.9:3001";
+const WORKOUT_API_URL = "http://192.168.1.9:3000";
 
 const workoutApi = axios.create({
   baseURL: WORKOUT_API_URL,

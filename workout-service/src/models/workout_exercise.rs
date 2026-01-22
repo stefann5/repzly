@@ -117,3 +117,11 @@ pub struct WorkoutGroup {
     pub workout_number: i32,
     pub exercises: Vec<WorkoutExerciseResponse>,
 }
+
+/// Response for next workout endpoint
+#[derive(Debug, Serialize, Deserialize)]
+pub struct NextWorkoutResponse {
+    pub workout_number: i32,
+    pub week: i32,
+    pub exercises: Vec<WorkoutExerciseResponse>,
+}

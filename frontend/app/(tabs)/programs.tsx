@@ -8,10 +8,12 @@ import { ProgramCard } from "@/components/ProgramCard";
 import { Program } from "@/types/program";
 import { useProgramStore } from "@/utils/programStore";
 import { useProgramSearch } from "@/hooks/useProgramSearch";
+import { useStartedProgramStore } from "@/utils/startedProgramStore";
 
 export default function ProgramsScreen() {
   const { setCurrentProgram, setWorkouts, setCurrentWeek, setCurrentWorkoutNumber } = useProgramStore();
   const router = useRouter();
+  const { startProgram } = useStartedProgramStore();
 
   const {
     programs,
@@ -54,6 +56,19 @@ export default function ProgramsScreen() {
         },
       ]
     );
+  };
+
+  const handleStartProgram = async (program: Program) => {
+    try {
+      await startProgram(program.id);
+      Alert.alert(
+        "Program Started",
+        `You've started "${program.name}". Go to Started Programs to begin your workout.`
+      );
+    } catch (error: any) {
+      const message = error.response?.data?.error || "Failed to start program";
+      Alert.alert("Error", message);
+    }
   };
 
   const renderFooter = () => {
@@ -110,6 +125,8 @@ export default function ProgramsScreen() {
             program={item}
             onPress={() => handleProgramPress(item)}
             onDelete={() => handleDeleteProgram(item.id, item.name)}
+            onStart={() => handleStartProgram(item)}
+            showStart={true}
           />
         )}
         style={{ flex: 1 }}

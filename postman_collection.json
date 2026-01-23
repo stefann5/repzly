@@ -1,0 +1,410 @@
+{
+  "info": {
+    "name": "Workout Service API",
+    "description": "Test collection for program and workout exercise endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "YOUR_JWT_TOKEN_HERE",
+      "type": "string"
+    },
+    {
+      "key": "programId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Programs",
+      "item": [
+        {
+          "name": "Create Program (temp ID)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"temp-123456-abcdef\",\n  \"name\": \"Test Program with Temp ID\",\n  \"description\": \"This program uses a temp ID that will be replaced\",\n  \"tags\": [\"strength\", \"hypertrophy\"],\n  \"total_weeks\": 4,\n  \"public\": false,\n  \"created\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/programs",
+              "host": ["{{baseUrl}}"],
+              "path": ["programs"]
+            },
+            "description": "Creates a program with a temporary ID. Backend will generate a real MongoDB ObjectId and return id_mapping."
+          }
+        },
+        {
+          "name": "Create Program (real ObjectId)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"507f1f77bcf86cd799439011\",\n  \"name\": \"Test Program with Real ID\",\n  \"description\": \"This program uses a pre-generated ObjectId\",\n  \"tags\": [\"cardio\"],\n  \"total_weeks\": 2,\n  \"public\": true,\n  \"created\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/programs",
+              "host": ["{{baseUrl}}"],
+              "path": ["programs"]
+            },
+            "description": "Creates a program with a real 24-char hex ObjectId. No id_mapping will be returned."
+          }
+        },
+        {
+          "name": "Get All Programs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/programs",
+              "host": ["{{baseUrl}}"],
+              "path": ["programs"]
+            }
+          }
+        },
+        {
+          "name": "Get Program by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/programs/{{programId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["programs", "{{programId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Program",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Program Name\",\n  \"description\": \"Updated description\",\n  \"total_weeks\": 6\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/programs/{{programId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["programs", "{{programId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Program",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/programs/{{programId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["programs", "{{programId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Workout Exercises",
+      "item": [
+        {
+          "name": "Get Week",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/programs/{{programId}}/workouts?week=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["programs", "{{programId}}", "workouts"],
+              "query": [
+                {
+                  "key": "week",
+                  "value": "1"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Upsert Exercises (all temp IDs)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"exercises\": [\n    {\n      \"id\": \"temp-workout1-ex1\",\n      \"week\": 1,\n      \"workout_number\": 1,\n      \"order\": 1,\n      \"exercise_id\": \"bench-press-id\",\n      \"volume_metric\": \"reps\",\n      \"intensity_metric\": \"RPE\",\n      \"notes\": \"Focus on form\",\n      \"sets\": [\n        { \"number\": 1, \"volume_lower\": 8, \"volume_upper\": 10, \"intensity_lower\": 7, \"intensity_upper\": 8 },\n        { \"number\": 2, \"volume_lower\": 8, \"volume_upper\": 10, \"intensity_lower\": 7, \"intensity_upper\": 8 },\n        { \"number\": 3, \"volume_lower\": 8, \"volume_upper\": 10, \"intensity_lower\": 8, \"intensity_upper\": 9 }\n      ]\n    },\n    {\n      \"id\": \"temp-workout1-ex2\",\n      \"week\": 1,\n      \"workout_number\": 1,\n      \"order\": 2,\n      \"exercise_id\": \"squat-id\",\n      \"volume_metric\": \"reps\",\n      \"intensity_metric\": \"RIR\",\n      \"notes\": null,\n      \"sets\": [\n        { \"number\": 1, \"volume_lower\": 5, \"volume_upper\": 5, \"intensity_lower\": 2, \"intensity_upper\": 3 },\n        { \"number\": 2, \"volume_lower\": 5, \"volume_upper\": 5, \"intensity_lower\": 2, \"intensity_upper\": 3 }\n      ]\n    },\n    {\n      \"id\": \"temp-workout2-ex1\",\n      \"week\": 1,\n      \"workout_number\": 2,\n      \"order\": 1,\n      \"exercise_id\": \"deadlift-id\",\n      \"volume_metric\": \"reps\",\n      \"intensity_metric\": \"percentage\",\n      \"notes\": \"Week 1 intro\",\n      \"sets\": [\n        { \"number\": 1, \"volume_lower\": 3, \"volume_upper\": 5, \"intensity_lower\": 70, \"intensity_upper\": 75 }\n      ]\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/programs/{{programId}}/workout-exercises",
+              "host": ["{{baseUrl}}"],
+              "path": ["programs", "{{programId}}", "workout-exercises"]
+            },
+            "description": "Upsert exercises with temp IDs. Backend will generate real ObjectIds and return id_mappings array."
+          }
+        },
+        {
+          "name": "Upsert Exercises (mixed temp and real IDs)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"exercises\": [\n    {\n      \"id\": \"507f1f77bcf86cd799439012\",\n      \"week\": 1,\n      \"workout_number\": 1,\n      \"order\": 1,\n      \"exercise_id\": \"bench-press-id\",\n      \"volume_metric\": \"reps\",\n      \"intensity_metric\": \"RPE\",\n      \"notes\": \"Updated existing exercise\",\n      \"sets\": [\n        { \"number\": 1, \"volume_lower\": 10, \"volume_upper\": 12, \"intensity_lower\": 7, \"intensity_upper\": 8 }\n      ]\n    },\n    {\n      \"id\": \"temp-new-exercise-1\",\n      \"week\": 1,\n      \"workout_number\": 1,\n      \"order\": 2,\n      \"exercise_id\": \"rows-id\",\n      \"volume_metric\": \"reps\",\n      \"intensity_metric\": \"RPE\",\n      \"notes\": \"New exercise with temp ID\",\n      \"sets\": [\n        { \"number\": 1, \"volume_lower\": 8, \"volume_upper\": 10, \"intensity_lower\": 7, \"intensity_upper\": 8 }\n      ]\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/programs/{{programId}}/workout-exercises",
+              "host": ["{{baseUrl}}"],
+              "path": ["programs", "{{programId}}", "workout-exercises"]
+            },
+            "description": "Upsert with mix of real ObjectIds (update existing) and temp IDs (create new). Only temp IDs will appear in id_mappings."
+          }
+        },
+        {
+          "name": "Upsert Exercises (all real IDs - updates only)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"exercises\": [\n    {\n      \"id\": \"507f1f77bcf86cd799439012\",\n      \"week\": 1,\n      \"workout_number\": 1,\n      \"order\": 1,\n      \"exercise_id\": \"bench-press-id\",\n      \"volume_metric\": \"reps\",\n      \"intensity_metric\": \"RPE\",\n      \"notes\": \"Modified notes\",\n      \"sets\": [\n        { \"number\": 1, \"volume_lower\": 6, \"volume_upper\": 8, \"intensity_lower\": 8, \"intensity_upper\": 9 },\n        { \"number\": 2, \"volume_lower\": 6, \"volume_upper\": 8, \"intensity_lower\": 8, \"intensity_upper\": 9 }\n      ]\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/programs/{{programId}}/workout-exercises",
+              "host": ["{{baseUrl}}"],
+              "path": ["programs", "{{programId}}", "workout-exercises"]
+            },
+            "description": "Update existing exercises using their real ObjectIds. id_mappings will be empty."
+          }
+        },
+        {
+          "name": "Delete Exercises (real IDs)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ids\": [\n    \"507f1f77bcf86cd799439012\",\n    \"507f1f77bcf86cd799439013\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/programs/{{programId}}/exercises",
+              "host": ["{{baseUrl}}"],
+              "path": ["programs", "{{programId}}", "exercises"]
+            },
+            "description": "Delete exercises by their real ObjectIds. Temp IDs should be handled client-side only."
+          }
+        },
+        {
+          "name": "Delete Workouts by Number",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workout_numbers\": [1, 2]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/programs/{{programId}}/workouts",
+              "host": ["{{baseUrl}}"],
+              "path": ["programs", "{{programId}}", "workouts"]
+            },
+            "description": "Delete all exercises in workouts 1 and 2. Only call this for workouts with saved (real ID) exercises."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Error Cases",
+      "item": [
+        {
+          "name": "Create Program (invalid ObjectId)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"not-a-valid-objectid-or-temp\",\n  \"name\": \"This should fail\",\n  \"total_weeks\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/programs",
+              "host": ["{{baseUrl}}"],
+              "path": ["programs"]
+            },
+            "description": "Should return 400 Bad Request - ID is neither a temp ID nor valid ObjectId"
+          }
+        },
+        {
+          "name": "Get Program (non-existent ID)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/programs/507f1f77bcf86cd799439099",
+              "host": ["{{baseUrl}}"],
+              "path": ["programs", "507f1f77bcf86cd799439099"]
+            },
+            "description": "Should return 404 Not Found"
+          }
+        },
+        {
+          "name": "Get Program (invalid ObjectId format)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/programs/invalid-id",
+              "host": ["{{baseUrl}}"],
+              "path": ["programs", "invalid-id"]
+            },
+            "description": "Should return 400 Bad Request - Invalid ObjectId"
+          }
+        },
+        {
+          "name": "Upsert Exercise (invalid exercise ID)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"exercises\": [\n    {\n      \"id\": \"not-temp-not-objectid\",\n      \"week\": 1,\n      \"workout_number\": 1,\n      \"order\": 1,\n      \"exercise_id\": \"some-exercise\",\n      \"sets\": []\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/programs/{{programId}}/workout-exercises",
+              "host": ["{{baseUrl}}"],
+              "path": ["programs", "{{programId}}", "workout-exercises"]
+            },
+            "description": "Should return 400 Bad Request - exercise ID is neither temp nor valid ObjectId"
+          }
+        }
+      ]
+    }
+  ]
+}

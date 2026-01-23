@@ -1,9 +1,0 @@
-use serde::{Deserialize, Serialize};
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct Claims {
-    pub sub: String, // username
-    pub exp: usize,
-    pub aud: String,
-    pub role: String,
-}

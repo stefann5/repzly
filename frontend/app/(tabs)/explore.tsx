@@ -1,4 +1,4 @@
-import { View, FlatList, RefreshControl, ActivityIndicator, TextInput, Pressable } from "react-native";
+import { View, FlatList, RefreshControl, ActivityIndicator, TextInput, Pressable, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Label } from "@/components/Label";
@@ -6,6 +6,7 @@ import { SafeAreaView } from "@/components/SafeAreaView";
 import { ProgramCard } from "@/components/ProgramCard";
 import { Program } from "@/types/program";
 import { useProgramSearch } from "@/hooks/useProgramSearch";
+import { useStartedProgramStore } from "@/utils/startedProgramStore";
 
 export default function ExploreScreen() {
   const router = useRouter();
@@ -19,9 +20,23 @@ export default function ExploreScreen() {
     refresh,
     loadMore,
   } = useProgramSearch("public");
+  const { startProgram } = useStartedProgramStore();
 
   const handleProgramPress = (program: Program) => {
     router.push(`/view-program?programId=${program.id}` as any);
+  };
+
+  const handleStartProgram = async (program: Program) => {
+    try {
+      await startProgram(program.id);
+      Alert.alert(
+        "Program Started",
+        `You've started "${program.name}". Go to Started Programs to begin your workout.`
+      );
+    } catch (error: any) {
+      const message = error.response?.data?.error || "Failed to start program";
+      Alert.alert("Error", message);
+    }
   };
 
   const renderFooter = () => {
@@ -68,7 +83,9 @@ export default function ExploreScreen() {
           <ProgramCard
             program={item}
             onPress={() => handleProgramPress(item)}
+            onStart={() => handleStartProgram(item)}
             showDelete={false}
+            showStart={true}
           />
         )}
         contentContainerStyle={{ padding: 16, paddingTop: 0 }}
@@ -79,14 +96,30 @@ export default function ExploreScreen() {
         onEndReachedThreshold={0.5}
         ListFooterComponent={renderFooter}
         ListEmptyComponent={
-          <View className="items-center justify-center py-12">
-            <Ionicons name="search-outline" size={48} color="#9CA3AF" />
-            <Label variant="body" color="secondary" styleClass="mt-4">
-              {loading ? "Loading..." : "No programs found"}
-            </Label>
+          <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+            {loading ?
+              (
+                <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 50 }}>
+                  <ActivityIndicator size="large" color="#3b82f6" />
+                </View>
+              ) :
+              (<View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+                <Ionicons name="barbell-outline" size={48} color="#9CA3AF" />
+
+                <Label variant="body" color="secondary" styleClass="mt-4">
+                  {searchQuery ? "No programs found" : "No programs yet"}
+                </Label>
+              </View>
+
+              )
+
+            }
+
             {!loading && (
               <Label variant="caption" color="tertiary" styleClass="mt-1">
-                Try different search terms
+                {searchQuery
+                  ? "Try different search terms"
+                  : "Create your first program to get started"}
               </Label>
             )}
           </View>

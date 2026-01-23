@@ -2,13 +2,12 @@ use argon2::{
     password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
     Argon2,
 };
-use axum::{extract::State, http::StatusCode, Json};
-use axum_jwt_auth::Claims;
+use axum::{extract::State, http::{HeaderMap, StatusCode}, Json};
 use serde::{Deserialize, Serialize};
 
 use crate::config::ACCESS_TOKEN_DURATION_HOURS;
 use crate::error::AppError;
-use crate::models::{MyClaims, RefreshToken, Role, User};
+use crate::models::{RefreshToken, Role, User};
 use crate::services::{
     create_refresh_token, create_verification_token, generate_access_token, send_verification_email,
 };
@@ -235,8 +234,27 @@ pub async fn logout(
     Ok(StatusCode::NO_CONTENT)
 }
 
-pub async fn protected(user: Claims<MyClaims>) -> Json<MyClaims> {
-    Json(user.claims)
+#[derive(Serialize)]
+pub struct UserInfo {
+    pub user_id: String,
+    pub role: String,
+}
+
+pub async fn protected(headers: HeaderMap) -> Result<Json<UserInfo>, AppError> {
+    let user_id = headers
+        .get("X-User-Id")
+        .and_then(|v| v.to_str().ok())
+        .ok_or_else(|| AppError::Unauthorized("Missing user info".to_string()))?;
+
+    let role = headers
+        .get("X-User-Role")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("user");
+
+    Ok(Json(UserInfo {
+        user_id: user_id.to_string(),
+        role: role.to_string(),
+    }))
 }
 
 pub async fn public() -> &'static str {

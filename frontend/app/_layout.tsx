@@ -68,6 +68,11 @@ export default function RootLayout() {
               <Stack.Screen name="create-program" options={{ headerShown: false }} />
               <Stack.Screen name="program-editor" options={{ headerShown: false }} />
               <Stack.Screen name="workout-editor" options={{ headerShown: false }} />
+              <Stack.Screen name="view-program" options={{ headerShown: false }} />
+              <Stack.Screen name="view-program-editor" options={{ headerShown: false }} />
+              <Stack.Screen name="view-workout" options={{ headerShown: false }} />
+              <Stack.Screen name="active-workout" options={{ headerShown: false }} />
+              <Stack.Screen name="program-history" options={{ headerShown: false }} />
             </Stack.Protected>
             <Stack.Protected guard={!isLoggedIn}>
               <Stack.Screen name="sign-in" options={{ headerShown: false }} />

@@ -1,19 +1,24 @@
-use bson::{doc, Document};
+use bson::{doc, oid::ObjectId};
 use chrono::Utc;
 use futures::TryStreamExt;
 
 use crate::db::Collections;
 use crate::error::AppError;
 use crate::models::{
-    CreateProgramRequest, PaginatedProgramResponse, Program, ProgramResponse, ProgramSearchParams,
-    UpdateProgramRequest,
+    CreateProgramRequest, CreateProgramResponse, IdMapping, PaginatedProgramResponse, Program,
+    ProgramResponse, ProgramSearchParams, UpdateProgramRequest,
 };
+
+/// Check if an ID is a temporary ID (starts with "temp-")
+fn is_temp_id(id: &str) -> bool {
+    id.starts_with("temp-")
+}
 
 pub async fn create_program(
     collections: &Collections,
     user_id: &str,
     req: CreateProgramRequest,
-) -> Result<ProgramResponse, AppError> {
+) -> Result<CreateProgramResponse, AppError> {
     let now = Utc::now();
 
     let created_at = if req.created == Some(true) {
@@ -22,8 +27,23 @@ pub async fn create_program(
         None
     };
 
+    // Check if this is a temp ID and generate a real ObjectId if so
+    let (real_id, id_mapping) = if is_temp_id(&req.id) {
+        let new_id = ObjectId::new();
+        let mapping = IdMapping {
+            temp_id: req.id.clone(),
+            real_id: new_id.to_hex(),
+        };
+        (new_id, Some(mapping))
+    } else {
+        // Parse existing hex string to ObjectId
+        let oid = ObjectId::parse_str(&req.id)
+            .map_err(|e| AppError::BadRequest(format!("Invalid ObjectId: {}", e)))?;
+        (oid, None)
+    };
+
     let program = Program {
-        id: req.id,
+        id: real_id,
         user_id: user_id.to_string(),
         name: req.name,
         description: req.description,
@@ -38,7 +58,10 @@ pub async fn create_program(
 
     collections.programs.insert_one(&program).await?;
 
-    Ok(program.into())
+    Ok(CreateProgramResponse {
+        program: program.into(),
+        id_mapping,
+    })
 }
 
 pub async fn get_program(
@@ -46,9 +69,12 @@ pub async fn get_program(
     user_id: &str,
     program_id: &str,
 ) -> Result<ProgramResponse, AppError> {
+    let oid = ObjectId::parse_str(program_id)
+        .map_err(|e| AppError::BadRequest(format!("Invalid ObjectId: {}", e)))?;
+
     let program = collections
         .programs
-        .find_one(doc! { "_id": program_id, "user_id": user_id })
+        .find_one(doc! { "_id": oid, "user_id": user_id })
         .await?
         .ok_or_else(|| AppError::NotFound("Program not found".to_string()))?;
 
@@ -74,10 +100,13 @@ pub async fn update_program(
     program_id: &str,
     req: UpdateProgramRequest,
 ) -> Result<ProgramResponse, AppError> {
+    let oid = ObjectId::parse_str(program_id)
+        .map_err(|e| AppError::BadRequest(format!("Invalid ObjectId: {}", e)))?;
+
     // Fetch current program
     let program = collections
         .programs
-        .find_one(doc! { "_id": program_id, "user_id": user_id })
+        .find_one(doc! { "_id": oid, "user_id": user_id })
         .await?
         .ok_or_else(|| AppError::NotFound("Program not found".to_string()))?;
 
@@ -111,7 +140,7 @@ pub async fn update_program(
     collections
         .programs
         .update_one(
-            doc! { "_id": program_id, "user_id": user_id },
+            doc! { "_id": oid, "user_id": user_id },
             doc! { "$set": update_doc },
         )
         .await?;
@@ -125,17 +154,20 @@ pub async fn delete_program(
     user_id: &str,
     program_id: &str,
 ) -> Result<(), AppError> {
+    let oid = ObjectId::parse_str(program_id)
+        .map_err(|e| AppError::BadRequest(format!("Invalid ObjectId: {}", e)))?;
+
     // Verify ownership and delete
     let result = collections
         .programs
-        .delete_one(doc! { "_id": program_id, "user_id": user_id })
+        .delete_one(doc! { "_id": oid, "user_id": user_id })
         .await?;
 
     if result.deleted_count == 0 {
         return Err(AppError::NotFound("Program not found".to_string()));
     }
 
-    // Cascade delete all workout_exercises
+    // Cascade delete all workout_exercises (program_id is stored as string)
     collections
         .workout_exercises
         .delete_many(doc! { "program_id": program_id })

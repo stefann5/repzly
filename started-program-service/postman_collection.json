@@ -1,0 +1,297 @@
+{
+  "info": {
+    "name": "Started Program Service",
+    "description": "API collection for testing the Started Program Service endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://192.168.1.9:3000",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "program_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "started_program_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "exercise_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.access_token) {",
+                  "    pm.collectionVariables.set('access_token', jsonData.access_token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"your_username\",\n    \"password\": \"your_password\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/login",
+              "host": ["{{base_url}}"],
+              "path": ["login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Programs (Workout Service)",
+      "item": [
+        {
+          "name": "Get My Programs",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.programs && jsonData.programs.length > 0) {",
+                  "    pm.collectionVariables.set('program_id', jsonData.programs[0].id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/programs",
+              "host": ["{{base_url}}"],
+              "path": ["programs"]
+            }
+          }
+        },
+        {
+          "name": "Get Program by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/programs/{{program_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["programs", "{{program_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Next Workout",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/programs/{{program_id}}/next-workout?last_workout_number=0",
+              "host": ["{{base_url}}"],
+              "path": ["programs", "{{program_id}}", "next-workout"],
+              "query": [
+                {
+                  "key": "last_workout_number",
+                  "value": "0"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Started Programs",
+      "item": [
+        {
+          "name": "Start Program",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.id) {",
+                  "    pm.collectionVariables.set('started_program_id', jsonData.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"program_id\": \"{{program_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/started-programs",
+              "host": ["{{base_url}}"],
+              "path": ["started-programs"]
+            }
+          }
+        },
+        {
+          "name": "Get All Started Programs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/started-programs",
+              "host": ["{{base_url}}"],
+              "path": ["started-programs"]
+            }
+          }
+        },
+        {
+          "name": "Get Started Program by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/started-programs/{{started_program_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["started-programs", "{{started_program_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Current Workout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.exercises && jsonData.exercises.length > 0) {",
+                  "    pm.collectionVariables.set('exercise_id', jsonData.exercises[0].id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/started-programs/{{started_program_id}}/current-workout",
+              "host": ["{{base_url}}"],
+              "path": ["started-programs", "{{started_program_id}}", "current-workout"]
+            }
+          }
+        },
+        {
+          "name": "Start Workout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/started-programs/{{started_program_id}}/start-workout",
+              "host": ["{{base_url}}"],
+              "path": ["started-programs", "{{started_program_id}}", "start-workout"]
+            }
+          }
+        },
+        {
+          "name": "Update Exercise Progress",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"sets\": [\n        {\n            \"number\": 1,\n            \"volume_lower\": 8,\n            \"volume_upper\": 12,\n            \"intensity_lower\": 70,\n            \"intensity_upper\": 80,\n            \"done_volume\": 10,\n            \"done_intensity\": 75\n        },\n        {\n            \"number\": 2,\n            \"volume_lower\": 8,\n            \"volume_upper\": 12,\n            \"intensity_lower\": 70,\n            \"intensity_upper\": 80,\n            \"done_volume\": 9,\n            \"done_intensity\": 77\n        },\n        {\n            \"number\": 3,\n            \"volume_lower\": 8,\n            \"volume_upper\": 12,\n            \"intensity_lower\": 70,\n            \"intensity_upper\": 80,\n            \"done_volume\": 8,\n            \"done_intensity\": 80\n        }\n    ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/started-programs/{{started_program_id}}/exercises/{{exercise_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["started-programs", "{{started_program_id}}", "exercises", "{{exercise_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Finish Workout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/started-programs/{{started_program_id}}/finish-workout",
+              "host": ["{{base_url}}"],
+              "path": ["started-programs", "{{started_program_id}}", "finish-workout"]
+            }
+          }
+        },
+        {
+          "name": "Delete Started Program",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/started-programs/{{started_program_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["started-programs", "{{started_program_id}}"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

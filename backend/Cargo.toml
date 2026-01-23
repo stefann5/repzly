@@ -4,11 +4,10 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-axum = "0.8"          # Changed from 0.7 to 0.8
-axum-jwt-auth = "0.6"
+axum = "0.8"
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1", features = ["derive"] }
-jsonwebtoken = "10"   # Changed from 9 to 10
+jsonwebtoken = { version = "10", features = ["rust_crypto"] }
 chrono = "0.4"
 dotenvy = "0.15.7"
 sqlx = { version = "0.8", features = ["runtime-tokio", "postgres", "tls-rustls", "chrono"] }

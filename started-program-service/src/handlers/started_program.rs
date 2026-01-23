@@ -3,6 +3,7 @@ use axum::{
     http::{HeaderMap, StatusCode},
     Json,
 };
+use chrono::Utc;
 
 use crate::error::AppError;
 use crate::models::{
@@ -11,6 +12,7 @@ use crate::models::{
     WorkoutHistoryResponse,
 };
 use crate::services;
+use crate::services::rabbitmq::AnalyticsMessage;
 use crate::services::workout_client::WorkoutClient;
 use crate::state::AppState;
 
@@ -145,9 +147,47 @@ pub async fn update_exercise_progress(
         &user_id,
         &started_program_id,
         &exercise_id,
-        payload.sets,
+        payload.sets.clone(),
     )
     .await?;
+
+    // Publish analytics messages for completed sets (fire and forget)
+    let exercise_catalog_id = response.exercise_id.clone();
+    let sets = payload.sets;
+    let rabbitmq = state.rabbitmq.clone();
+    let http_client = state.http_client.clone();
+    let workout_service_url = state.workout_service_url.clone();
+    let started_program_id_clone = started_program_id.clone();
+    let user_id_clone = user_id.clone();
+
+    tokio::spawn(async move {
+        // Get exercise info to retrieve muscles
+        let workout_client = WorkoutClient::new(&http_client, &workout_service_url);
+        if let Ok(exercise_info) = workout_client
+            .get_exercise(&exercise_catalog_id, &user_id_clone)
+            .await
+        {
+            let timestamp = Utc::now().to_rfc3339();
+
+            // Publish message for each completed set
+            for set in sets {
+                if set.done_volume.is_some() && set.done_intensity.is_some() {
+                    let message = AnalyticsMessage {
+                        timestamp: timestamp.clone(),
+                        user_id: user_id_clone.clone(),
+                        started_program_id: started_program_id_clone.clone(),
+                        exercise_id: exercise_catalog_id.clone(),
+                        set_number: set.number,
+                        muscles: exercise_info.muscles.clone(),
+                    };
+
+                    if let Err(e) = rabbitmq.publish_analytics(&message).await {
+                        eprintln!("Failed to publish analytics message: {:?}", e);
+                    }
+                }
+            }
+        }
+    });
 
     Ok(Json(response))
 }

@@ -10,6 +10,7 @@ pub struct ErrorResponse {
     pub error: String,
 }
 
+#[derive(Debug)]
 pub enum AppError {
     Unauthorized(String),
     InternalServerError(String),

@@ -49,6 +49,22 @@ pub struct NextWorkoutResponse {
     pub exercises: Vec<WorkoutExerciseResponse>,
 }
 
+/// Muscle intensity from exercise definition
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct MuscleIntensity {
+    pub muscle: String,
+    pub intensity: f64,
+}
+
+/// Response from get_exercise endpoint
+#[derive(Debug, Deserialize)]
+pub struct ExerciseResponse {
+    pub id: String,
+    pub name: String,
+    pub demonstration_link: String,
+    pub muscles: Vec<MuscleIntensity>,
+}
+
 /// Client for calling workout-service
 pub struct WorkoutClient<'a> {
     client: &'a Client,
@@ -117,6 +133,35 @@ impl<'a> WorkoutClient<'a> {
         } else if response.status().as_u16() == 404 {
             // No more workouts
             Ok(None)
+        } else {
+            Err(AppError::InternalServerError(format!(
+                "Workout service error: {}",
+                response.status()
+            )))
+        }
+    }
+
+    /// Get exercise by ID to retrieve muscle information
+    pub async fn get_exercise(
+        &self,
+        exercise_id: &str,
+        user_id: &str,
+    ) -> Result<ExerciseResponse, AppError> {
+        let url = format!("{}/exercises/{}", self.base_url, exercise_id);
+
+        let response = self
+            .client
+            .get(&url)
+            .header("X-User-Id", user_id)
+            .send()
+            .await?;
+
+        if response.status().is_success() {
+            response.json().await.map_err(|e| {
+                AppError::InternalServerError(format!("Failed to parse exercise response: {}", e))
+            })
+        } else if response.status().as_u16() == 404 {
+            Err(AppError::NotFound("Exercise not found".to_string()))
         } else {
             Err(AppError::InternalServerError(format!(
                 "Workout service error: {}",

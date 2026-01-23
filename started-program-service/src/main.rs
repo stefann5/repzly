@@ -22,6 +22,7 @@ use handlers::{
     get_started_program, get_started_programs, get_workout_history, get_workout_history_detail,
     start_program, start_workout, update_exercise_progress,
 };
+use services::RabbitMQPublisher;
 use state::AppState;
 
 #[tokio::main]
@@ -49,10 +50,16 @@ async fn main() {
         .build()
         .expect("Failed to create HTTP client");
 
+    // Connect to RabbitMQ
+    let rabbitmq = RabbitMQPublisher::new(&config.rabbitmq_url)
+        .await
+        .expect("Failed to connect to RabbitMQ");
+
     let state = AppState {
         collections,
         http_client,
         workout_service_url: config.workout_service_url,
+        rabbitmq,
     };
 
     // CORS configuration

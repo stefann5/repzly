@@ -14,8 +14,8 @@ mod state;
 
 use config::Config;
 use proxy::{
-    proxy_to_backend_protected, proxy_to_backend_public, proxy_to_started_program_protected,
-    proxy_to_workout_protected,
+    proxy_to_analytics_protected, proxy_to_backend_protected, proxy_to_backend_public,
+    proxy_to_started_program_protected, proxy_to_workout_protected,
 };
 use state::AppState;
 
@@ -36,6 +36,7 @@ async fn main() {
         backend_url: config.backend_url,
         workout_service_url: config.workout_service_url,
         started_program_service_url: config.started_program_service_url,
+        analytics_service_url: config.analytics_service_url,
     };
 
     let cors = CorsLayer::new()
@@ -144,11 +145,23 @@ async fn main() {
             get(proxy_to_started_program_protected),
         );
 
+    // Protected analytics service routes -> Analytics Service
+    let analytics_routes = Router::new()
+        .route(
+            "/analytics/total-intensity",
+            get(proxy_to_analytics_protected),
+        )
+        .route(
+            "/analytics/intensity-over-time",
+            get(proxy_to_analytics_protected),
+        );
+
     let app = Router::new()
         .merge(public_routes)
         .merge(protected_backend_routes)
         .merge(workout_routes)
         .merge(started_program_routes)
+        .merge(analytics_routes)
         .layer(cors)
         .with_state(state);
 

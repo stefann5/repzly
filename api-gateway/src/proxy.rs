@@ -176,6 +176,34 @@ pub async fn proxy_to_started_program_protected(
     .await
 }
 
+/// Proxy to analytics service with authentication
+pub async fn proxy_to_analytics_protected(
+    State(state): State<AppState>,
+    request: Request,
+) -> Result<impl IntoResponse, AppError> {
+    let method = request.method().clone();
+    let uri = request.uri().clone();
+    let headers = request.headers().clone();
+
+    // Validate JWT
+    let claims = extract_and_validate_token(&headers, &state.jwt_secret)?;
+
+    let body = axum::body::to_bytes(request.into_body(), usize::MAX)
+        .await
+        .map_err(|e| AppError::InternalServerError(format!("Failed to read body: {}", e)))?;
+
+    let target_url = build_target_url(&state.analytics_service_url, &uri);
+    proxy_request(
+        &state.http_client,
+        method,
+        &target_url,
+        &headers,
+        body,
+        Some((&claims.sub, &claims.role)),
+    )
+    .await
+}
+
 fn build_target_url(base_url: &str, uri: &Uri) -> String {
     let path_and_query = uri.path_and_query().map(|pq| pq.as_str()).unwrap_or("/");
     format!("{}{}", base_url, path_and_query)

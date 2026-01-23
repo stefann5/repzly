@@ -7,4 +7,5 @@ pub struct AppState {
     pub backend_url: String,
     pub workout_service_url: String,
     pub started_program_service_url: String,
+    pub analytics_service_url: String,
 }

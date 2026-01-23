@@ -24,6 +24,7 @@ pub struct TimeseriesMetadata {
 /// Timeseries document for exercise analytics
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ExerciseTimeseries {
+    #[serde(with = "bson::serde_helpers::chrono_datetime_as_bson_datetime")]
     pub timestamp: DateTime<Utc>,
     #[serde(rename = "metaField")]
     pub meta_field: TimeseriesMetadata,

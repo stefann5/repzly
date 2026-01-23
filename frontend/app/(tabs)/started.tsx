@@ -120,7 +120,7 @@ export default function StartedProgramsScreen() {
         {item.program_image_url && (
           <Image
             source={{ uri: item.program_image_url }}
-            style={{ width: "100%", height: 140 }}
+            style={{ width: "100%", height: 180 }}
             contentFit="cover"
           />
         )}

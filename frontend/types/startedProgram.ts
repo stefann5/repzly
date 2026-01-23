@@ -40,6 +40,7 @@ export interface StartedWorkoutExercise {
   notes?: string;
   sets: StartedSet[];
   completed_at?: string;
+  updated_at: string;
 }
 
 export interface CurrentWorkoutResponse {
@@ -78,4 +79,11 @@ export interface WorkoutHistoryDetailResponse {
   week: number;
   completed_at?: string;
   exercises: StartedWorkoutExercise[];
+}
+
+// Exercise History types
+
+export interface ExerciseHistoryResponse {
+  exercise_id: string;
+  history: StartedWorkoutExercise[];
 }

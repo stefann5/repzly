@@ -7,6 +7,7 @@ import {
   UpdateExerciseProgressRequest,
   WorkoutHistoryResponse,
   WorkoutHistoryDetailResponse,
+  ExerciseHistoryResponse,
 } from "@/types/startedProgram";
 
 export const startedProgramService = {
@@ -93,6 +94,16 @@ export const startedProgramService = {
   ): Promise<WorkoutHistoryDetailResponse> => {
     const response = await workoutApi.get<WorkoutHistoryDetailResponse>(
       `/started-programs/${startedProgramId}/workout-history/${workoutNumber}`
+    );
+    return response.data;
+  },
+
+  // Get exercise history (all instances of an exercise the user has done)
+  getExerciseHistory: async (
+    exerciseId: string
+  ): Promise<ExerciseHistoryResponse> => {
+    const response = await workoutApi.get<ExerciseHistoryResponse>(
+      `/exercises/${exerciseId}/history`
     );
     return response.data;
   },

@@ -5,8 +5,8 @@ use futures::TryStreamExt;
 use crate::db::Collections;
 use crate::error::AppError;
 use crate::models::{
-    CurrentWorkoutResponse, StartedProgram, StartedProgramResponse, StartedSet,
-    StartedWorkoutExercise, StartedWorkoutExerciseResponse, WeekHistoryGroup,
+    CurrentWorkoutResponse, ExerciseHistoryResponse, StartedProgram, StartedProgramResponse,
+    StartedSet, StartedWorkoutExercise, StartedWorkoutExerciseResponse, WeekHistoryGroup,
     WorkoutHistoryDetailResponse, WorkoutHistoryItem, WorkoutHistoryResponse,
 };
 use crate::services::workout_client::{NextWorkoutResponse, WorkoutClient};
@@ -58,7 +58,7 @@ pub async fn start_program(
 
     // 5. If next workout exists, create started workout exercises
     if let Some(workout) = next_workout {
-        initialize_workout_exercises(collections, &started_program.id.to_hex(), &workout).await?;
+        initialize_workout_exercises(collections, user_id, &started_program.id.to_hex(), &workout).await?;
     }
 
     Ok(started_program.into())
@@ -67,14 +67,17 @@ pub async fn start_program(
 /// Initialize workout exercises from workout-service response
 pub async fn initialize_workout_exercises(
     collections: &Collections,
+    user_id: &str,
     started_program_id: &str,
     workout: &NextWorkoutResponse,
 ) -> Result<(), AppError> {
+    let now = Utc::now();
     let exercises: Vec<StartedWorkoutExercise> = workout
         .exercises
         .iter()
         .map(|e| StartedWorkoutExercise {
             id: ObjectId::new(),
+            user_id: user_id.to_string(),
             started_program_id: started_program_id.to_string(),
             workout_number: e.workout_number,
             week: e.week,
@@ -97,6 +100,7 @@ pub async fn initialize_workout_exercises(
                 })
                 .collect(),
             completed_at: None,
+            updated_at: now,
         })
         .collect();
 
@@ -201,7 +205,7 @@ pub async fn finish_workout(
 
     let new_workout_number = if let Some(workout) = &next_workout {
         // Initialize new workout exercises
-        initialize_workout_exercises(collections, started_program_id, workout).await?;
+        initialize_workout_exercises(collections, user_id, started_program_id, workout).await?;
         Some(workout.workout_number)
     } else {
         // No more workouts - program completed
@@ -337,7 +341,8 @@ pub async fn update_exercise_progress(
         .await?
         .ok_or_else(|| AppError::NotFound("Started program not found".to_string()))?;
 
-    // Update exercise sets
+    // Update exercise sets and updated_at
+    let now = Utc::now();
     let sets_bson = bson::to_bson(&sets)
         .map_err(|e| AppError::InternalServerError(format!("Failed to serialize sets: {}", e)))?;
 
@@ -345,12 +350,11 @@ pub async fn update_exercise_progress(
         .started_workout_exercises
         .update_one(
             doc! { "_id": &exercise_oid, "started_program_id": started_program_id },
-            doc! { "$set": { "sets": sets_bson } },
+            doc! { "$set": { "sets": sets_bson, "updated_at": now.to_rfc3339() } },
         )
         .await?;
 
     // Update started program updated_at
-    let now = Utc::now();
     collections
         .started_programs
         .update_one(
@@ -505,5 +509,35 @@ pub async fn get_workout_history_detail(
         week,
         completed_at,
         exercises: exercises.into_iter().map(|e| e.into()).collect(),
+    })
+}
+
+/// Get exercise history for a specific exercise (all instances user has done with at least one done set)
+pub async fn get_exercise_history(
+    collections: &Collections,
+    user_id: &str,
+    exercise_id: &str,
+) -> Result<ExerciseHistoryResponse, AppError> {
+    // Find all started workout exercises for this user and exercise_id
+    // that have at least one done set (done_volume is not null)
+    let cursor = collections
+        .started_workout_exercises
+        .find(doc! {
+            "user_id": user_id,
+            "exercise_id": exercise_id,
+            "sets": {
+                "$elemMatch": {
+                    "done_volume": { "$ne": bson::Bson::Null }
+                }
+            }
+        })
+        .sort(doc! { "updated_at": -1 })
+        .await?;
+
+    let exercises: Vec<StartedWorkoutExercise> = cursor.try_collect().await?;
+
+    Ok(ExerciseHistoryResponse {
+        exercise_id: exercise_id.to_string(),
+        history: exercises.into_iter().map(|e| e.into()).collect(),
     })
 }

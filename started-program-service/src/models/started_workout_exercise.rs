@@ -19,6 +19,7 @@ pub struct StartedSet {
 pub struct StartedWorkoutExercise {
     #[serde(rename = "_id")]
     pub id: ObjectId,
+    pub user_id: String,
     pub started_program_id: String,
     pub workout_number: i32,
     pub week: i32,
@@ -30,6 +31,8 @@ pub struct StartedWorkoutExercise {
     pub sets: Vec<StartedSet>,
     /// When this workout exercise was completed (null if still in progress)
     pub completed_at: Option<DateTime<Utc>>,
+    /// Last time this exercise was updated
+    pub updated_at: DateTime<Utc>,
 }
 
 /// StartedWorkoutExercise response for JSON output
@@ -46,6 +49,7 @@ pub struct StartedWorkoutExerciseResponse {
     pub notes: Option<String>,
     pub sets: Vec<StartedSet>,
     pub completed_at: Option<String>,
+    pub updated_at: String,
 }
 
 impl From<StartedWorkoutExercise> for StartedWorkoutExerciseResponse {
@@ -62,6 +66,7 @@ impl From<StartedWorkoutExercise> for StartedWorkoutExerciseResponse {
             notes: e.notes,
             sets: e.sets,
             completed_at: e.completed_at.map(|d| d.to_rfc3339()),
+            updated_at: e.updated_at.to_rfc3339(),
         }
     }
 }
@@ -112,4 +117,11 @@ pub struct WorkoutHistoryDetailResponse {
     pub week: i32,
     pub completed_at: Option<String>,
     pub exercises: Vec<StartedWorkoutExerciseResponse>,
+}
+
+/// Response for exercise history (all instances of an exercise the user has done)
+#[derive(Debug, Serialize)]
+pub struct ExerciseHistoryResponse {
+    pub exercise_id: String,
+    pub history: Vec<StartedWorkoutExerciseResponse>,
 }

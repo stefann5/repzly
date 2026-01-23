@@ -137,6 +137,11 @@ async fn main() {
         .route(
             "/started-programs/{started_program_id}/workout-history/{workout_number}",
             get(proxy_to_started_program_protected),
+        )
+        // Exercise history route
+        .route(
+            "/exercises/{exercise_id}/history",
+            get(proxy_to_started_program_protected),
         );
 
     let app = Router::new()

@@ -18,9 +18,9 @@ mod state;
 use config::AppConfig;
 use db::Collections;
 use handlers::{
-    delete_started_program, finish_workout, get_current_workout, get_started_program,
-    get_started_programs, get_workout_history, get_workout_history_detail, start_program,
-    start_workout, update_exercise_progress,
+    delete_started_program, finish_workout, get_current_workout, get_exercise_history,
+    get_started_program, get_started_programs, get_workout_history, get_workout_history_detail,
+    start_program, start_workout, update_exercise_progress,
 };
 use state::AppState;
 
@@ -98,6 +98,11 @@ async fn main() {
             "/started-programs/{started_program_id}/workout-history/{workout_number}",
             get(get_workout_history_detail),
         )
+        // Exercise history route
+        .route(
+            "/exercises/{exercise_id}/history",
+            get(get_exercise_history),
+        )
         .layer(cors)
         .with_state(state);
 
@@ -140,6 +145,17 @@ async fn create_indexes(collections: &Collections) {
     collections
         .started_workout_exercises
         .create_index(exercise_index)
+        .await
+        .ok();
+
+    // Index for started_workout_exercises: user_id + exercise_id (for exercise history)
+    let exercise_history_index = IndexModel::builder()
+        .keys(doc! { "user_id": 1, "exercise_id": 1 })
+        .build();
+
+    collections
+        .started_workout_exercises
+        .create_index(exercise_history_index)
         .await
         .ok();
 

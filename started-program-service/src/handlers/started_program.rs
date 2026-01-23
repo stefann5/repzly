@@ -6,7 +6,7 @@ use axum::{
 
 use crate::error::AppError;
 use crate::models::{
-    CurrentWorkoutResponse, StartProgramRequest, StartedProgramResponse,
+    CurrentWorkoutResponse, ExerciseHistoryResponse, StartProgramRequest, StartedProgramResponse,
     StartedWorkoutExerciseResponse, UpdateExerciseProgressRequest, WorkoutHistoryDetailResponse,
     WorkoutHistoryResponse,
 };
@@ -181,6 +181,20 @@ pub async fn get_workout_history_detail(
         workout_number,
     )
     .await?;
+
+    Ok(Json(response))
+}
+
+/// GET /exercises/:exercise_id/history - Get all history for a specific exercise
+pub async fn get_exercise_history(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Path(exercise_id): Path<String>,
+) -> Result<Json<ExerciseHistoryResponse>, AppError> {
+    let user_id = extract_user_id(&headers)?;
+
+    let response =
+        services::get_exercise_history(&state.collections, &user_id, &exercise_id).await?;
 
     Ok(Json(response))
 }

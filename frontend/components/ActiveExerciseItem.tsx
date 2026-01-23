@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { View, useColorScheme } from "react-native";
+import { View, Pressable, useColorScheme } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Label } from "./Label";
 import { ActiveSetRow } from "./ActiveSetRow";
@@ -22,12 +22,14 @@ const INTENSITY_OPTIONS = [
 type ActiveExerciseItemProps = {
   exercise: StartedWorkoutExercise;
   onUpdateSets: (sets: StartedSet[]) => void;
+  onViewHistory: (exerciseId: string) => void;
   styleClass?: string;
 };
 
 function ActiveExerciseItemComponent({
   exercise,
   onUpdateSets,
+  onViewHistory,
   styleClass,
 }: ActiveExerciseItemProps) {
   const colorScheme = useColorScheme();
@@ -63,11 +65,17 @@ function ActiveExerciseItemComponent({
             {exerciseName}
           </Label>
         </View>
-        {hasNotes && (
-          <View className="flex-row items-center">
-            <Ionicons name="document-text" size={18} color="#3b82f6" />
-          </View>
-        )}
+        <View className="flex-row items-center">
+          {hasNotes && (
+            <Ionicons name="document-text" size={18} color="#3b82f6" style={{ marginRight: 8 }} />
+          )}
+          <Pressable
+            onPress={() => onViewHistory(exercise.exercise_id)}
+            hitSlop={8}
+          >
+            <Ionicons name="time-outline" size={20} color="#9CA3AF" />
+          </Pressable>
+        </View>
       </View>
 
       {/* Content */}

@@ -1,5 +1,5 @@
 [package]
-name = "workout-service"
+name = "program-service"
 version = "0.1.0"
 edition = "2021"
 

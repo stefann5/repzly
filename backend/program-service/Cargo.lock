@@ -2114,6 +2114,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "program-service"
+version = "0.1.0"
+dependencies = [
+ "aws-config",
+ "aws-sdk-s3",
+ "axum",
+ "bson",
+ "chrono",
+ "dotenvy",
+ "futures",
+ "mongodb",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tower-http",
+ "uuid",
+]
+
+[[package]]
 name = "quote"
 version = "1.0.43"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3390,25 +3409,6 @@ name = "wit-bindgen"
 version = "0.46.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f17a85883d4e6d00e8a97c586de764dabcc06133f7f1d55dce5cdc070ad7fe59"
-
-[[package]]
-name = "workout-service"
-version = "0.1.0"
-dependencies = [
- "aws-config",
- "aws-sdk-s3",
- "axum",
- "bson",
- "chrono",
- "dotenvy",
- "futures",
- "mongodb",
- "serde",
- "serde_json",
- "tokio",
- "tower-http",
- "uuid",
-]
 
 [[package]]
 name = "writeable"

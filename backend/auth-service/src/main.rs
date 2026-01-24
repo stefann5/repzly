@@ -95,10 +95,10 @@ async fn main() {
         .route("/protected", get(protected))
         .with_state(state);
 
-    let listener = tokio::net::TcpListener::bind("192.168.1.9:3002")
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3002")
         .await
         .unwrap();
 
-    println!("Backend service running on http://192.168.1.9:3002");
+    println!("Backend service running on http://0.0.0.0:3002");
     axum::serve(listener, app).await.unwrap();
 }

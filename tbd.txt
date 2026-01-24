@@ -1,0 +1,6 @@
+1) the auth service uses dockerized postgres sql, make a docker container and seed some users
+2) split the functionalities per user as described in the specification (readme)
+3) use nginx to serve the microservices and expose the api gateway to the internet
+4) build android apk
+5) code review, and going through all cirriculum 
+6) dodati toastove za errore

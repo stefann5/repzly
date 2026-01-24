@@ -92,11 +92,11 @@ async fn main() {
         .layer(cors)
         .with_state(state);
 
-    let listener = tokio::net::TcpListener::bind("192.168.1.9:3001")
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3001")
         .await
         .unwrap();
 
-    println!("Workout service running on http://192.168.1.9:3001");
+    println!("Workout service running on http://0.0.0.0:3001");
     axum::serve(listener, app).await.unwrap();
 }
 

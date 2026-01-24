@@ -165,10 +165,10 @@ async fn main() {
         .layer(cors)
         .with_state(state);
 
-    let listener = tokio::net::TcpListener::bind("192.168.1.9:3000")
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
         .await
         .unwrap();
 
-    println!("API Gateway running on http://192.168.1.9:3000");
+    println!("API Gateway running on http://0.0.0.0:3000");
     axum::serve(listener, app).await.unwrap();
 }

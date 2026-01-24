@@ -113,11 +113,11 @@ async fn main() {
         .layer(cors)
         .with_state(state);
 
-    let listener = tokio::net::TcpListener::bind("192.168.1.9:3003")
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3003")
         .await
         .unwrap();
 
-    println!("Started Program Service running on http://192.168.1.9:3003");
+    println!("Started Program Service running on http://0.0.0.0:3003");
     axum::serve(listener, app).await.unwrap();
 }
 

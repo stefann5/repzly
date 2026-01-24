@@ -1,10 +1,10 @@
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { storage, ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from "@/utils/storage";
-
-const WORKOUT_API_URL = "http://192.168.1.9:3000";
+import { API_BASE_URL } from "@/config/api";
+import { Toast } from "toastify-react-native";
 
 const workoutApi = axios.create({
-  baseURL: WORKOUT_API_URL,
+  baseURL: API_BASE_URL,
   headers: { "Content-Type": "application/json" },
 });
 
@@ -34,7 +34,7 @@ const refreshTokens = async (): Promise<boolean> => {
     const response = await axios.post<{
       access_token: string;
       refresh_token: string;
-    }>("http://192.168.1.9:3000/refresh", { refresh_token: refreshToken });
+    }>(`${API_BASE_URL}/refresh`, { refresh_token: refreshToken });
 
     await storage.set(ACCESS_TOKEN_KEY, response.data.access_token);
     await storage.set(REFRESH_TOKEN_KEY, response.data.refresh_token);
@@ -43,6 +43,43 @@ const refreshTokens = async (): Promise<boolean> => {
     await storage.remove(ACCESS_TOKEN_KEY);
     await storage.remove(REFRESH_TOKEN_KEY);
     return false;
+  }
+};
+
+// Helper to extract error message from response
+const getErrorMessage = (error: AxiosError<{ error?: string; message?: string }>): string => {
+  if (error.response?.data?.error) {
+    return error.response.data.error;
+  }
+  if (error.response?.data?.message) {
+    return error.response.data.message;
+  }
+
+  // Handle common HTTP status codes
+  switch (error.response?.status) {
+    case 400:
+      return "Invalid request. Please check your input.";
+    case 401:
+      return "Session expired. Please log in again.";
+    case 403:
+      return "You don't have permission to perform this action.";
+    case 404:
+      return "The requested resource was not found.";
+    case 409:
+      return "This resource already exists.";
+    case 422:
+      return "Invalid data provided.";
+    case 500:
+      return "Server error. Please try again later.";
+    case 502:
+    case 503:
+    case 504:
+      return "Service temporarily unavailable. Please try again.";
+    default:
+      if (!error.response) {
+        return "Network error. Please check your connection.";
+      }
+      return "An unexpected error occurred.";
   }
 };
 
@@ -59,42 +96,58 @@ workoutApi.interceptors.request.use(
 
 workoutApi.interceptors.response.use(
   (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
+  async (error: AxiosError<{ error?: string; message?: string }>) => {
+    const originalRequest = error.config as typeof error.config & { _retry?: boolean };
 
-    if (error.response?.status !== 401 || originalRequest._retry) {
-      return Promise.reject(error);
-    }
-
-    if (isRefreshing) {
-      return new Promise((resolve, reject) => {
-        failedQueue.push({ resolve, reject });
-      }).then((token) => {
-        originalRequest.headers.Authorization = `Bearer ${token}`;
-        return workoutApi(originalRequest);
-      });
-    }
-
-    originalRequest._retry = true;
-    isRefreshing = true;
-
-    try {
-      const success = await refreshTokens();
-      if (success) {
-        const newToken = await storage.get(ACCESS_TOKEN_KEY);
-        processQueue(null, newToken);
-        originalRequest.headers.Authorization = `Bearer ${newToken}`;
-        return workoutApi(originalRequest);
-      } else {
-        processQueue(error, null);
-        return Promise.reject(error);
+    // Handle 401 with token refresh
+    if (error.response?.status === 401 && !originalRequest?._retry) {
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        }).then((token) => {
+          if (originalRequest) {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return workoutApi(originalRequest);
+          }
+        });
       }
-    } catch (refreshError) {
-      processQueue(refreshError, null);
-      return Promise.reject(refreshError);
-    } finally {
-      isRefreshing = false;
+
+      if (originalRequest) {
+        originalRequest._retry = true;
+      }
+      isRefreshing = true;
+
+      try {
+        const success = await refreshTokens();
+        if (success) {
+          const newToken = await storage.get(ACCESS_TOKEN_KEY);
+          processQueue(null, newToken);
+          if (originalRequest) {
+            originalRequest.headers.Authorization = `Bearer ${newToken}`;
+            return workoutApi(originalRequest);
+          }
+        } else {
+          processQueue(error, null);
+          Toast.error("Session expired. Please log in again.");
+          return Promise.reject(error);
+        }
+      } catch (refreshError) {
+        processQueue(refreshError, null);
+        Toast.error("Session expired. Please log in again.");
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
     }
+
+    // Show toast for non-401 errors (or 401 that couldn't be refreshed)
+    // Don't show toast for 401 during refresh flow as we handle it above
+    if (error.response?.status !== 401 || originalRequest?._retry) {
+      const errorMessage = getErrorMessage(error);
+      Toast.error(errorMessage);
+    }
+
+    return Promise.reject(error);
   }
 );
 

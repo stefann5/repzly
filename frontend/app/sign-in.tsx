@@ -6,10 +6,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "expo-router";
 import { useRef } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { KeyboardAvoidingView, Platform, TextInput, View } from "react-native";
+import { TextInput } from "react-native";
 import { z } from "zod";
 import { SafeAreaView } from "@/components/SafeAreaView";
 import { KeyboardAwareScrollView } from '@/components/KeyboardAwareScrollView';
+import { Toast } from "toastify-react-native";
 
 const signInSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -28,9 +29,14 @@ export default function SignInScreen() {
     defaultValues: { username: "", password: "" },
   });
 
-  const onSubmit = (data: SignInForm) => {
-    login(data.username, data.password);
-    // Handle sign in logic here
+  const onSubmit = async (data: SignInForm) => {
+    try {
+      await login(data.username, data.password);
+      Toast.success("Welcome back!");
+    } catch (error: any) {
+      const message = error?.response?.data?.error || "Login failed. Please check your credentials.";
+      Toast.error(message);
+    }
   };
 
   return (
@@ -41,7 +47,6 @@ export default function SignInScreen() {
         contentContainerClassName="justify-center flex-1"
       >
         <Label variant="heading" weight="bold" styleClass="mb-8 font-atkinson">Sign In</Label>
-        {/* <Text className="text-white font-atkinson">REPZLY 0</Text> */}
         <Controller
           control={control}
           name="username"

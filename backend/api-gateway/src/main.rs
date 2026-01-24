@@ -1,5 +1,5 @@
 use axum::{
-    routing::{any, delete, get, patch, post, put},
+    routing::{delete, get, patch, post, put},
     Router,
 };
 use reqwest::Client;
@@ -15,7 +15,8 @@ mod state;
 use config::Config;
 use proxy::{
     proxy_to_analytics_protected, proxy_to_backend_protected, proxy_to_backend_public,
-    proxy_to_started_program_protected, proxy_to_workout_protected,
+    proxy_to_started_program_protected, proxy_to_workout_admin_only, proxy_to_workout_coach_only,
+    proxy_to_workout_protected,
 };
 use state::AppState;
 
@@ -59,52 +60,57 @@ async fn main() {
         Router::new().route("/protected", get(proxy_to_backend_protected));
 
     // Protected workout service routes -> Workout Service
+    // Role-based access:
+    // - GET operations: Any authenticated user
+    // - POST/PATCH/DELETE programs: Coach only
+    // - POST/PATCH/DELETE exercises: Admin only
     let workout_routes = Router::new()
-        // Program search routes
+        // Program search routes (any authenticated user)
         .route("/programs/search/public", get(proxy_to_workout_protected))
-        .route("/programs/search/mine", get(proxy_to_workout_protected))
+        .route("/programs/search/mine", get(proxy_to_workout_coach_only)) // Coach sees their own programs
         // Program CRUD
         .route(
             "/programs",
-            get(proxy_to_workout_protected).post(proxy_to_workout_protected),
+            get(proxy_to_workout_protected).post(proxy_to_workout_coach_only), // POST: Coach only
         )
+        .route("/programs/{program_id}", get(proxy_to_workout_protected)) // GET: Any user
         .route(
             "/programs/{program_id}",
-            get(proxy_to_workout_protected)
-                .patch(proxy_to_workout_protected)
-                .delete(proxy_to_workout_protected),
+            patch(proxy_to_workout_coach_only).delete(proxy_to_workout_coach_only), // PATCH/DELETE: Coach only
         )
         .route(
             "/programs/{program_id}/image",
-            post(proxy_to_workout_protected),
+            post(proxy_to_workout_coach_only), // Coach only
         )
-        // Next workout (for started-program-service)
+        // Next workout (for started-program-service) - any user
         .route(
             "/programs/{program_id}/next-workout",
             get(proxy_to_workout_protected),
         )
-        // Workout exercises
+        // Workout exercises - Coach only for modifications
         .route(
             "/programs/{program_id}/workouts",
-            get(proxy_to_workout_protected).delete(proxy_to_workout_protected),
+            get(proxy_to_workout_protected).delete(proxy_to_workout_coach_only),
         )
         .route(
             "/programs/{program_id}/workout-exercises",
-            put(proxy_to_workout_protected).delete(proxy_to_workout_protected),
+            put(proxy_to_workout_coach_only).delete(proxy_to_workout_coach_only),
         )
         // Exercise catalog
+        // GET: Any authenticated user
+        // POST/PATCH/DELETE: Admin only
         .route(
             "/exercises",
-            get(proxy_to_workout_protected).post(proxy_to_workout_protected),
+            get(proxy_to_workout_protected).post(proxy_to_workout_admin_only),
         )
+        .route("/exercises/{exercise_id}", get(proxy_to_workout_protected))
         .route(
             "/exercises/{exercise_id}",
-            get(proxy_to_workout_protected)
-                .patch(proxy_to_workout_protected)
-                .delete(proxy_to_workout_protected),
+            patch(proxy_to_workout_admin_only).delete(proxy_to_workout_admin_only),
         );
 
     // Protected started program service routes -> Started Program Service
+    // All routes available to any authenticated user (User, Coach, Admin)
     let started_program_routes = Router::new()
         .route(
             "/started-programs",
@@ -146,6 +152,7 @@ async fn main() {
         );
 
     // Protected analytics service routes -> Analytics Service
+    // Available to any authenticated user
     let analytics_routes = Router::new()
         .route(
             "/analytics/total-intensity",

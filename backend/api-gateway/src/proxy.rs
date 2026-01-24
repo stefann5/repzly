@@ -8,8 +8,45 @@ use bytes::Bytes;
 use reqwest::Client;
 
 use crate::error::AppError;
-use crate::middleware::auth::extract_and_validate_token;
+use crate::middleware::auth::{extract_and_validate_token, Claims};
 use crate::state::AppState;
+
+/// Roles allowed for different operations
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum RequiredRole {
+    /// Any authenticated user
+    Any,
+    /// Only users with 'user' role (can also be coach or admin)
+    User,
+    /// Only users with 'coach' role (can also be admin)
+    Coach,
+    /// Only users with 'admin' role
+    Admin,
+}
+
+impl RequiredRole {
+    /// Check if the given role satisfies this requirement
+    pub fn is_satisfied_by(&self, role: &str) -> bool {
+        match self {
+            RequiredRole::Any => true,
+            RequiredRole::User => matches!(role, "user" | "coach" | "admin"),
+            RequiredRole::Coach => matches!(role, "coach" | "admin"),
+            RequiredRole::Admin => role == "admin",
+        }
+    }
+}
+
+/// Validate that the user has the required role
+fn validate_role(claims: &Claims, required: RequiredRole) -> Result<(), AppError> {
+    if required.is_satisfied_by(&claims.role) {
+        Ok(())
+    } else {
+        Err(AppError::Forbidden(format!(
+            "Insufficient permissions. Required role: {:?}, your role: {}",
+            required, claims.role
+        )))
+    }
+}
 
 async fn proxy_request(
     client: &Client,
@@ -120,7 +157,7 @@ pub async fn proxy_to_backend_protected(
     .await
 }
 
-/// Proxy to workout service with authentication
+/// Proxy to workout service with authentication (any authenticated user)
 pub async fn proxy_to_workout_protected(
     State(state): State<AppState>,
     request: Request,
@@ -148,7 +185,69 @@ pub async fn proxy_to_workout_protected(
     .await
 }
 
-/// Proxy to started program service with authentication
+/// Proxy to workout service for coach-only operations (create/edit/delete programs)
+pub async fn proxy_to_workout_coach_only(
+    State(state): State<AppState>,
+    request: Request,
+) -> Result<impl IntoResponse, AppError> {
+    let method = request.method().clone();
+    let uri = request.uri().clone();
+    let headers = request.headers().clone();
+
+    // Validate JWT
+    let claims = extract_and_validate_token(&headers, &state.jwt_secret)?;
+
+    // Validate role - only coach or admin can create/edit/delete programs
+    validate_role(&claims, RequiredRole::Coach)?;
+
+    let body = axum::body::to_bytes(request.into_body(), usize::MAX)
+        .await
+        .map_err(|e| AppError::InternalServerError(format!("Failed to read body: {}", e)))?;
+
+    let target_url = build_target_url(&state.workout_service_url, &uri);
+    proxy_request(
+        &state.http_client,
+        method,
+        &target_url,
+        &headers,
+        body,
+        Some((&claims.sub, &claims.role)),
+    )
+    .await
+}
+
+/// Proxy to workout service for admin-only operations (manage exercises)
+pub async fn proxy_to_workout_admin_only(
+    State(state): State<AppState>,
+    request: Request,
+) -> Result<impl IntoResponse, AppError> {
+    let method = request.method().clone();
+    let uri = request.uri().clone();
+    let headers = request.headers().clone();
+
+    // Validate JWT
+    let claims = extract_and_validate_token(&headers, &state.jwt_secret)?;
+
+    // Validate role - only admin can create/edit/delete exercises
+    validate_role(&claims, RequiredRole::Admin)?;
+
+    let body = axum::body::to_bytes(request.into_body(), usize::MAX)
+        .await
+        .map_err(|e| AppError::InternalServerError(format!("Failed to read body: {}", e)))?;
+
+    let target_url = build_target_url(&state.workout_service_url, &uri);
+    proxy_request(
+        &state.http_client,
+        method,
+        &target_url,
+        &headers,
+        body,
+        Some((&claims.sub, &claims.role)),
+    )
+    .await
+}
+
+/// Proxy to started program service with authentication (user role - any authenticated)
 pub async fn proxy_to_started_program_protected(
     State(state): State<AppState>,
     request: Request,
@@ -159,6 +258,9 @@ pub async fn proxy_to_started_program_protected(
 
     // Validate JWT
     let claims = extract_and_validate_token(&headers, &state.jwt_secret)?;
+
+    // Any authenticated user can use started programs
+    validate_role(&claims, RequiredRole::User)?;
 
     let body = axum::body::to_bytes(request.into_body(), usize::MAX)
         .await
@@ -176,7 +278,7 @@ pub async fn proxy_to_started_program_protected(
     .await
 }
 
-/// Proxy to analytics service with authentication
+/// Proxy to analytics service with authentication (user role - any authenticated)
 pub async fn proxy_to_analytics_protected(
     State(state): State<AppState>,
     request: Request,
@@ -187,6 +289,9 @@ pub async fn proxy_to_analytics_protected(
 
     // Validate JWT
     let claims = extract_and_validate_token(&headers, &state.jwt_secret)?;
+
+    // Any authenticated user can view analytics
+    validate_role(&claims, RequiredRole::User)?;
 
     let body = axum::body::to_bytes(request.into_body(), usize::MAX)
         .await

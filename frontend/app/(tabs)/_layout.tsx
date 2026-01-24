@@ -2,11 +2,13 @@ import { Tabs } from "expo-router";
 import { useColorScheme } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function TabsLayout() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const insets = useSafeAreaInsets();
+  const { isCoach, isAdmin } = useAuth();
 
   return (
     <Tabs
@@ -37,6 +39,7 @@ export default function TabsLayout() {
           ),
         }}
       />
+      {/* Programs tab - Only visible to Coach and Admin */}
       <Tabs.Screen
         name="programs"
         options={{
@@ -44,6 +47,7 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="barbell" size={size} color={color} />
           ),
+          href: isCoach ? undefined : null, // Hide from tab bar if not coach
         }}
       />
       <Tabs.Screen
@@ -71,6 +75,17 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="body" size={size} color={color} />
           ),
+        }}
+      />
+      {/* Admin tab - Only visible to Admin */}
+      <Tabs.Screen
+        name="admin"
+        options={{
+          title: "Admin",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="settings" size={size} color={color} />
+          ),
+          href: isAdmin ? undefined : null, // Hide from tab bar if not admin
         }}
       />
     </Tabs>

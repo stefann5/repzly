@@ -1,3 +1,7 @@
+use argon2::{
+    password_hash::{rand_core::OsRng, PasswordHasher, SaltString},
+    Argon2,
+};
 use axum::{
     routing::{get, post},
     Router,
@@ -14,6 +18,59 @@ mod state;
 use config::SmtpConfig;
 use handlers::{login, logout, protected, public, refresh, register, resend_verification, verify_email};
 use state::AppState;
+
+/// Seed users for development/testing purposes
+async fn seed_users(db: &sqlx::PgPool) {
+    let seed_users = vec![
+        ("admin", "admin@example.com", "password123", "admin"),
+        ("coach1", "coach1@example.com", "password123", "coach"),
+        ("coach2", "coach2@example.com", "password123", "coach"),
+        ("user1", "user1@example.com", "password123", "user"),
+        ("user2", "user2@example.com", "password123", "user"),
+        ("user3", "user3@example.com", "password123", "user"),
+    ];
+
+    let argon2 = Argon2::default();
+
+    for (username, email, password, role) in seed_users {
+        // Check if user already exists
+        let exists: Option<(i32,)> = sqlx::query_as("SELECT id FROM users WHERE username = $1")
+            .bind(username)
+            .fetch_optional(db)
+            .await
+            .ok()
+            .flatten();
+
+        if exists.is_some() {
+            continue;
+        }
+
+        // Hash password
+        let salt = SaltString::generate(&mut OsRng);
+        let password_hash = match argon2.hash_password(password.as_bytes(), &salt) {
+            Ok(hash) => hash.to_string(),
+            Err(e) => {
+                eprintln!("Failed to hash password for {}: {}", username, e);
+                continue;
+            }
+        };
+
+        // Insert user
+        match sqlx::query(
+            "INSERT INTO users (username, email, password_hash, role, email_verified) VALUES ($1, $2, $3, $4, true)"
+        )
+        .bind(username)
+        .bind(email)
+        .bind(&password_hash)
+        .bind(role)
+        .execute(db)
+        .await
+        {
+            Ok(_) => println!("Seeded user: {} (role: {})", username, role),
+            Err(e) => eprintln!("Failed to seed user {}: {}", username, e),
+        }
+    }
+}
 
 #[tokio::main]
 async fn main() {
@@ -77,6 +134,11 @@ async fn main() {
     .execute(&db)
     .await
     .expect("Failed to create email_verification_tokens table");
+
+    // Seed users for development
+    println!("Seeding database with test users...");
+    seed_users(&db).await;
+    println!("Database seeding complete.");
 
     let state = AppState {
         jwt_secret,

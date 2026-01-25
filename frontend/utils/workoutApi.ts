@@ -1,10 +1,9 @@
 import axios, { AxiosError } from "axios";
 import { storage, ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from "@/utils/storage";
-import { API_BASE_URL } from "@/config/api";
+import { getApiUrl } from "@/config/api";
 import { Toast } from "toastify-react-native";
 
 const workoutApi = axios.create({
-  baseURL: API_BASE_URL,
   headers: { "Content-Type": "application/json" },
 });
 
@@ -34,7 +33,7 @@ const refreshTokens = async (): Promise<boolean> => {
     const response = await axios.post<{
       access_token: string;
       refresh_token: string;
-    }>(`${API_BASE_URL}/refresh`, { refresh_token: refreshToken });
+    }>(`${getApiUrl()}/refresh`, { refresh_token: refreshToken });
 
     await storage.set(ACCESS_TOKEN_KEY, response.data.access_token);
     await storage.set(REFRESH_TOKEN_KEY, response.data.refresh_token);
@@ -85,6 +84,8 @@ const getErrorMessage = (error: AxiosError<{ error?: string; message?: string }>
 
 workoutApi.interceptors.request.use(
   async (config) => {
+    // Dynamically set baseURL on each request to support URL changes
+    config.baseURL = getApiUrl();
     const token = await storage.get(ACCESS_TOKEN_KEY);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;

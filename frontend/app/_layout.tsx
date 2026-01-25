@@ -17,6 +17,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import ToastManager from 'toastify-react-native';
 import { toastConfig } from '@/components/Toast';
+import { initApiUrl } from "@/config/api";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -32,7 +33,10 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    checkAuthStatus();
+    // Initialize API URL from storage before checking auth
+    initApiUrl().then(() => {
+      checkAuthStatus();
+    });
   }, []);
 
   useEffect(() => {

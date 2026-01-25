@@ -1,12 +1,17 @@
 import axios from "axios";
 import { storage, ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, USER_ROLE_KEY } from "@/utils/storage";
 import type { UserRole } from "@/utils/authStore";
-import { API_BASE_URL } from "@/config/api";
+import { getApiUrl } from "@/config/api";
 
 // Separate axios instance for auth endpoints (no interceptors)
 const authApi = axios.create({
-  baseURL: API_BASE_URL,
   headers: { "Content-Type": "application/json" },
+});
+
+// Dynamically set baseURL on each request to support URL changes
+authApi.interceptors.request.use((config) => {
+  config.baseURL = getApiUrl();
+  return config;
 });
 
 interface LoginCredentials {

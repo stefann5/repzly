@@ -10,5 +10,5 @@
 // For local development
 // export const API_BASE_URL = "http://localhost:80";
 
-// Default configuration - uses nginx reverse proxy
-export const API_BASE_URL = "http://192.168.1.9:80";
+// Public ngrok URL
+export const API_BASE_URL = "https://5be4b0c81674.ngrok-free.app";

@@ -72,9 +72,16 @@ pub async fn get_program(
     let oid = ObjectId::parse_str(program_id)
         .map_err(|e| AppError::BadRequest(format!("Invalid ObjectId: {}", e)))?;
 
+    // Allow access if user owns the program OR if it's a published public program
     let program = collections
         .programs
-        .find_one(doc! { "_id": oid, "user_id": user_id })
+        .find_one(doc! {
+            "_id": oid,
+            "$or": [
+                { "user_id": user_id },
+                { "public": true, "created_at": { "$ne": null } }
+            ]
+        })
         .await?
         .ok_or_else(|| AppError::NotFound("Program not found".to_string()))?;
 

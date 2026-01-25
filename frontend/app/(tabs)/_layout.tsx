@@ -30,12 +30,22 @@ export default function TabsLayout() {
         },
       }}
     >
+      {/* Started Programs - Now the main/index screen */}
       <Tabs.Screen
         name="index"
         options={{
-          title: "Home",
+          title: "Workouts",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home" size={size} color={color} />
+            <Ionicons name="fitness" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="explore"
+        options={{
+          title: "Explore",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="search" size={size} color={color} />
           ),
         }}
       />
@@ -48,24 +58,6 @@ export default function TabsLayout() {
             <Ionicons name="barbell" size={size} color={color} />
           ),
           href: isCoach ? undefined : null, // Hide from tab bar if not coach
-        }}
-      />
-      <Tabs.Screen
-        name="explore"
-        options={{
-          title: "Explore",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="search" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="started"
-        options={{
-          title: "Started",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="fitness" size={size} color={color} />
-          ),
         }}
       />
       <Tabs.Screen
@@ -86,6 +78,13 @@ export default function TabsLayout() {
             <Ionicons name="settings" size={size} color={color} />
           ),
           href: isAdmin ? undefined : null, // Hide from tab bar if not admin
+        }}
+      />
+      {/* Home tab - Hidden, kept for future use */}
+      <Tabs.Screen
+        name="home"
+        options={{
+          href: null, // Hidden from tab bar
         }}
       />
     </Tabs>

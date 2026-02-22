@@ -13,6 +13,10 @@ export interface CreateExerciseRequest {
   muscles: MuscleIntensity[];
 }
 
+interface CreateExercisePayload extends CreateExerciseRequest {
+  id: string;
+}
+
 export interface UpdateExerciseRequest {
   name?: string;
   demonstration_link?: string;
@@ -40,7 +44,11 @@ export const exerciseService = {
 
   // Create a new exercise (Admin only)
   create: async (data: CreateExerciseRequest): Promise<Exercise> => {
-    const response = await workoutApi.post<Exercise>("/exercises", data);
+    const payload: CreateExercisePayload = {
+      ...data,
+      id: data.name, // Use exercise name as ID
+    };
+    const response = await workoutApi.post<Exercise>("/exercises", payload);
     return response.data;
   },
 

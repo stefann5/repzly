@@ -6,9 +6,11 @@ import { Label } from "@/components/Label";
 import { SafeAreaView } from "@/components/SafeAreaView";
 import { ActiveExerciseItem } from "@/components/ActiveExerciseItem";
 import { ExerciseHistoryModal } from "@/components/ExerciseHistoryModal";
+import { ExerciseDemoModal } from "@/components/ExerciseDemoModal";
 import { useStartedProgramStore } from "@/utils/startedProgramStore";
 import { useExerciseStore } from "@/utils/exerciseStore";
 import { StartedSet } from "@/types/startedProgram";
+import { Exercise } from "@/types/exercise";
 
 export default function ActiveWorkoutScreen() {
   const router = useRouter();
@@ -22,12 +24,13 @@ export default function ActiveWorkoutScreen() {
     finishWorkout,
     clearActiveWorkout,
   } = useStartedProgramStore();
-  const { loadExercises, isLoaded: exercisesLoaded } = useExerciseStore();
+  const { loadExercises, isLoaded: exercisesLoaded, getExercise } = useExerciseStore();
 
   const [isStarting, setIsStarting] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
   const [localExercises, setLocalExercises] = useState<typeof currentWorkout>(null);
   const [historyExerciseId, setHistoryExerciseId] = useState<string | null>(null);
+  const [demoExercise, setDemoExercise] = useState<Exercise | null>(null);
 
   // Load exercises catalog for name lookup
   useEffect(() => {
@@ -121,6 +124,13 @@ export default function ActiveWorkoutScreen() {
     setHistoryExerciseId(exerciseId);
   };
 
+  const handleViewInfo = (exerciseId: string) => {
+    const exercise = getExercise(exerciseId);
+    if (exercise) {
+      setDemoExercise(exercise);
+    }
+  };
+
   if (!activeStartedProgram) {
     return (
       <SafeAreaView className="items-center justify-center flex-1 bg-white dark:bg-zinc-900">
@@ -196,6 +206,7 @@ export default function ActiveWorkoutScreen() {
               exercise={exercise}
               onUpdateSets={(sets) => handleUpdateSets(exercise.id, sets)}
               onViewHistory={handleViewHistory}
+              onViewInfo={handleViewInfo}
             />
           ))}
         </ScrollView>
@@ -206,6 +217,12 @@ export default function ActiveWorkoutScreen() {
         visible={historyExerciseId !== null}
         exerciseId={historyExerciseId}
         onClose={() => setHistoryExerciseId(null)}
+      />
+
+      {/* Exercise Demo Modal */}
+      <ExerciseDemoModal
+        exercise={demoExercise}
+        onClose={() => setDemoExercise(null)}
       />
     </SafeAreaView>
   );

@@ -1,4 +1,4 @@
-import { KeyboardAvoidingView, Platform, TextInput, View } from "react-native";
+import { Pressable, TextInput, View, useColorScheme } from "react-native";
 import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -6,16 +6,19 @@ import { Button } from "@/components/Button";
 import { Input } from "@/components/Input";
 import { Label } from "@/components/Label";
 import { useAuth } from "@/hooks/useAuth";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "@/components/SafeAreaView";
 import { KeyboardAwareScrollView } from '@/components/KeyboardAwareScrollView';
+import { Toast } from "toastify-react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 const registerSchema = z.object({
     email: z.string().min(1, "Email is required").email("Invalid email address"),
     username: z.string().min(1, "Username is required"),
     password: z.string().min(8, "Password must be at least 8 characters"),
     confirmPassword: z.string().min(1, "Confirm Password is required"),
+    role: z.enum(["user", "coach"]),
 }).superRefine((val, ctx) => {
     if (val.password !== val.confirmPassword) {
         ctx.addIssue({
@@ -34,13 +37,25 @@ export default function RegisterScreen() {
     const emailRef = useRef<TextInput>(null);
     const confirmPasswordRef = useRef<TextInput>(null);
     const router = useRouter();
-    const { control, handleSubmit, formState: { errors, isSubmitting } } = useForm<RegisterForm>({
+    const colorScheme = useColorScheme();
+    const isDark = colorScheme === "dark";
+
+    const { control, handleSubmit, formState: { errors, isSubmitting }, watch, setValue } = useForm<RegisterForm>({
         resolver: zodResolver(registerSchema),
-        defaultValues: { username: "", password: "", email: "", confirmPassword: "" },
+        defaultValues: { username: "", password: "", email: "", confirmPassword: "", role: "user" },
     });
 
-    const onSubmit = (data: RegisterForm) => {
-        register(data.username, data.email, data.password, data.confirmPassword);
+    const selectedRole = watch("role");
+
+    const onSubmit = async (data: RegisterForm) => {
+        try {
+            await register(data.username, data.email, data.password, data.confirmPassword, data.role);
+            Toast.success("Registration successful! Please check your email to verify your account.");
+            router.replace("/sign-in");
+        } catch (error: any) {
+            const message = error?.response?.data?.error || "Registration failed. Please try again.";
+            Toast.error(message);
+        }
     };
 
     return (
@@ -50,8 +65,78 @@ export default function RegisterScreen() {
                     className="flex-1 px-6"
                     contentContainerClassName="justify-center flex-1"
                   >
-                <Label variant="heading" weight="bold" styleClass="mb-8">Sign Up</Label>
-                {/* <Text className="text-white font-atkinson">REPZLY 0</Text> */}
+                <Label variant="heading" weight="bold" styleClass="mb-6">Sign Up</Label>
+
+                {/* Role Selector */}
+                <View className="mb-6">
+                    <Label variant="body" weight="medium" styleClass="mb-2">I want to</Label>
+                    <View className="flex-row gap-3">
+                        <Pressable
+                            onPress={() => setValue("role", "user")}
+                            className={`flex-1 p-4 rounded-xl border-2 ${
+                                selectedRole === "user"
+                                    ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                                    : "border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800"
+                            }`}
+                        >
+                            <View className="items-center">
+                                <Ionicons
+                                    name="fitness"
+                                    size={28}
+                                    color={selectedRole === "user" ? "#3b82f6" : isDark ? "#71717a" : "#a1a1aa"}
+                                />
+                                <Label
+                                    variant="body"
+                                    weight="medium"
+                                    styleClass="mt-2"
+                                    color={selectedRole === "user" ? "primary" : "secondary"}
+                                >
+                                    Train
+                                </Label>
+                                <Label
+                                    variant="caption"
+                                    color="secondary"
+                                    styleClass="text-center mt-1"
+                                >
+                                    Follow programs & track workouts
+                                </Label>
+                            </View>
+                        </Pressable>
+
+                        <Pressable
+                            onPress={() => setValue("role", "coach")}
+                            className={`flex-1 p-4 rounded-xl border-2 ${
+                                selectedRole === "coach"
+                                    ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                                    : "border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800"
+                            }`}
+                        >
+                            <View className="items-center">
+                                <Ionicons
+                                    name="clipboard"
+                                    size={28}
+                                    color={selectedRole === "coach" ? "#3b82f6" : isDark ? "#71717a" : "#a1a1aa"}
+                                />
+                                <Label
+                                    variant="body"
+                                    weight="medium"
+                                    styleClass="mt-2"
+                                    color={selectedRole === "coach" ? "primary" : "secondary"}
+                                >
+                                    Coach
+                                </Label>
+                                <Label
+                                    variant="caption"
+                                    color="secondary"
+                                    styleClass="text-center mt-1"
+                                >
+                                    Create & share training programs
+                                </Label>
+                            </View>
+                        </Pressable>
+                    </View>
+                </View>
+
                 <Controller
                     control={control}
                     name="username"

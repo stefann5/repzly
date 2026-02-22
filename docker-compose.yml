@@ -1,4 +1,23 @@
 services:
+  # Infrastructure
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin}
+      POSTGRES_DB: repzly
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   rabbitmq:
     image: rabbitmq:management
     container_name: rabbitmq
@@ -8,3 +27,116 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend Services
+  auth-service:
+    build:
+      context: ./backend/auth-service
+      dockerfile: Dockerfile
+    container_name: auth-service
+    ports:
+      - "3002:3002"
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
+      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-admin}@postgres:5432/repzly
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL}
+      APP_URL: ${APP_URL:-http://localhost:3000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  program-service:
+    build:
+      context: ./backend/program-service
+      dockerfile: Dockerfile
+    container_name: program-service
+    ports:
+      - "3001:3001"
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
+      MONGODB_URI: ${MONGODB_URI}
+      DATABASE_NAME: workout_db
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_REGION: ${AWS_REGION:-eu-central-1}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME}
+    restart: unless-stopped
+
+  started-program-service:
+    build:
+      context: ./backend/started-program-service
+      dockerfile: Dockerfile
+    container_name: started-program-service
+    ports:
+      - "3003:3003"
+    environment:
+      MONGODB_URI: ${MONGODB_URI}
+      DATABASE_NAME: started_program_db
+      WORKOUT_SERVICE_URL: http://program-service:3001
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  analytics-service:
+    build:
+      context: ./backend/analytics-service
+      dockerfile: Dockerfile
+    container_name: analytics-service
+    ports:
+      - "3004:3004"
+    environment:
+      MONGODB_URI: ${MONGODB_URI}
+      DATABASE_NAME: analytics_db
+      WORKOUT_SERVICE_URL: http://program-service:3001
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  api-gateway:
+    build:
+      context: ./backend/api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - "0.0.0.0:80:3000"  # Expose API gateway on port 80
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
+      BACKEND_URL: http://auth-service:3002
+      WORKOUT_SERVICE_URL: http://program-service:3001
+      STARTED_PROGRAM_SERVICE_URL: http://started-program-service:3003
+      ANALYTICS_SERVICE_URL: http://analytics-service:3004
+    depends_on:
+      - auth-service
+      - program-service
+      - started-program-service
+      - analytics-service
+    restart: unless-stopped
+
+  # Ngrok tunnel for public access
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: ngrok
+    environment:
+      NGROK_AUTHTOKEN: 38j3zRjN21nmRlmgbpii3RgrYNA_2N1TNVuTKrPaZHZUpvwPG
+    command: http api-gateway:3000 --log stdout
+    ports:
+      - "4040:4040"  # Ngrok web interface for viewing tunnel URL
+    depends_on:
+      - api-gateway
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

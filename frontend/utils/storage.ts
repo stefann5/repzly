@@ -5,6 +5,8 @@ const isWeb = Platform.OS === "web";
 
 export const ACCESS_TOKEN_KEY = "access-token";
 export const REFRESH_TOKEN_KEY = "refresh-token";
+export const USER_ROLE_KEY = "user-role";
+export const API_URL_KEY = "api-url";
 
 export const storage = {
   get: async (key: string): Promise<string | null> => {

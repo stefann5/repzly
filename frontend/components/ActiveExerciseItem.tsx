@@ -23,6 +23,7 @@ type ActiveExerciseItemProps = {
   exercise: StartedWorkoutExercise;
   onUpdateSets: (sets: StartedSet[]) => void;
   onViewHistory: (exerciseId: string) => void;
+  onViewInfo: (exerciseId: string) => void;
   styleClass?: string;
 };
 
@@ -30,13 +31,16 @@ function ActiveExerciseItemComponent({
   exercise,
   onUpdateSets,
   onViewHistory,
+  onViewInfo,
   styleClass,
 }: ActiveExerciseItemProps) {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
-  const { getExerciseName } = useExerciseStore();
+  const { getExerciseName, getExercise } = useExerciseStore();
 
-  const exerciseName = getExerciseName(exercise.exercise_id);
+  const exerciseData = getExercise(exercise.exercise_id);
+  const exerciseName = exerciseData?.name || exercise.exercise_id;
+  const hasDemoLink = exerciseData?.demonstration_link && exerciseData.demonstration_link.length > 0;
   const hasNotes = exercise.notes && exercise.notes.trim().length > 0;
 
   const volumeOption = VOLUME_OPTIONS.find(o => o.value === (exercise.volume_metric || "reps"));
@@ -65,9 +69,17 @@ function ActiveExerciseItemComponent({
             {exerciseName}
           </Label>
         </View>
-        <View className="flex-row items-center">
+        <View className="flex-row items-center gap-2">
           {hasNotes && (
-            <Ionicons name="document-text" size={18} color="#3b82f6" style={{ marginRight: 8 }} />
+            <Ionicons name="document-text" size={18} color="#3b82f6" />
+          )}
+          {hasDemoLink && (
+            <Pressable
+              onPress={() => onViewInfo(exercise.exercise_id)}
+              hitSlop={8}
+            >
+              <Ionicons name="information-circle-outline" size={20} color="#3b82f6" />
+            </Pressable>
           )}
           <Pressable
             onPress={() => onViewHistory(exercise.exercise_id)}

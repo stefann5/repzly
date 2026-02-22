@@ -1,10 +1,26 @@
 import workoutApi from "@/utils/workoutApi";
-import { Exercise, PaginatedExerciseResponse } from "@/types/exercise";
+import { Exercise, PaginatedExerciseResponse, MuscleIntensity } from "@/types/exercise";
 
 export interface ExerciseQueryParams {
   search?: string;
   page?: number;
   limit?: number;
+}
+
+export interface CreateExerciseRequest {
+  name: string;
+  demonstration_link: string;
+  muscles: MuscleIntensity[];
+}
+
+interface CreateExercisePayload extends CreateExerciseRequest {
+  id: string;
+}
+
+export interface UpdateExerciseRequest {
+  name?: string;
+  demonstration_link?: string;
+  muscles?: MuscleIntensity[];
 }
 
 export const exerciseService = {
@@ -24,5 +40,26 @@ export const exerciseService = {
   get: async (exerciseId: string): Promise<Exercise> => {
     const response = await workoutApi.get<Exercise>(`/exercises/${exerciseId}`);
     return response.data;
+  },
+
+  // Create a new exercise (Admin only)
+  create: async (data: CreateExerciseRequest): Promise<Exercise> => {
+    const payload: CreateExercisePayload = {
+      ...data,
+      id: data.name, // Use exercise name as ID
+    };
+    const response = await workoutApi.post<Exercise>("/exercises", payload);
+    return response.data;
+  },
+
+  // Update an exercise (Admin only)
+  update: async (exerciseId: string, data: UpdateExerciseRequest): Promise<Exercise> => {
+    const response = await workoutApi.patch<Exercise>(`/exercises/${exerciseId}`, data);
+    return response.data;
+  },
+
+  // Delete an exercise (Admin only)
+  delete: async (exerciseId: string): Promise<void> => {
+    await workoutApi.delete(`/exercises/${exerciseId}`);
   },
 };
